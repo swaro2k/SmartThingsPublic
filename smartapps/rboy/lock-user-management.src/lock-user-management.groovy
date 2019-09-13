@@ -21,7 +21,7 @@
 */ 
 
 def clientVersion() {
-    return "07.07.03"
+    return "07.09.05"
 }
 
 /**
@@ -30,151 +30,152 @@ def clientVersion() {
 * Copyright RBoy Apps, redistribution or reuse of code is not allowed without permission
 *
 * Change Log:
-* 2018-8-27 - (v07.07.03) Renamed to Lock User Management and added current date as expiration date for new user
-* 2018-8-20 - (v07.07.02) Optimized checking for app updates and improved text layout for automatic relocks
-* 2018-8-1 - (v07.07.00) Added support for Arming/disarming ADT and resume playing the audio after notifications
-* 2018-7-31 - (v07.06.07) More stingent validation for date entry format
-* 2018-7-25 - (v07.06.06) Clean up comments, make Sure Programming Engine hardier, detect is someone added a code accidentally from another app and delete it
-* 2018-7-9 - (v07.06.04) Handle invalid date inputs more gracefully
-* 2018-7-2 - (v07.06.03) More accurate display message when detecting different pin code lengths for locks
-* 2018-6-30 - (v07.06.02) Actively notify user if lock programming fails due to communication issues
-* 2018-6-29 - (v07.06.01) Fix error deleting excess users when reducing count of users and fix user state when selecting locks
-* 2018-6-27 - (v07.06.00) Added indications and messages about pending and failed code updates
-* 2018-6-26 - (v07.05.05) Updated user lock selection description text, fixed custom user notifications
-* 2018-5-31 - (v07.05.04) Correct RFID case to capitals
-* 2018-5-29 - (v07.05.03) Save lock id's instead of names when selecting per user locks to avoid issue of renamed locked/locks with similar names (requires users to reselect locks) and use sensor name instead of lock name for reporting open doors
-* 2018-5-11 - (v07.05.02) Update for platform not saving sms settings for individual users
-* 2018-5-1 - (v07.05.01) Patch for removing burner codes when multiple locks are used simultaneously
-* 2018-4-13 - (v07.05.00) Stop tracking lock users after they are moved from the list of programmed locks, added support for Keypad Locks, fixed bug with arming SHM to Home on lock action
-* 2018-4-12 - (v07.04.04) Log/notify if lock failed to program users, show activate/expire time on summary screen
-* 2018-4-7 - (v07.04.03) Improvement to sure programming engine - handle lock programming failures for missed code notifications with retries, this indicates a underlying failure of the mesh
-* 2018-3-26 - (v07.04.02) Check if ST mobile app saved an invalid start time, handle timezone differences between ST mobile app and hub better
-* 2018-3-19 - (v07.04.00) Added support for custom per user notifications, clarified user types text
-* 2018-3-9 - (v07.03.00) Maintain support for the legacy ZWave / JHampstead device handlers, improved tracking of changed codes, added support for limiting number of code use notifications
-* 2018-3-7 - (v07.02.02) Clarify user type descriptions for easier understanding
-* 2018-3-1 - (v07.02.01) Clean up excess users, handle duplicate codes and lost codes better, fix nameSlot notifications
-* 2018-2-28 - (v07.02.00) Allow no time for schedled users indicating all day, better identification and compatibility with legacy handler reporting, fix ST UI bug not showing code length and remove fix issue with names being resent to the lock due to spaces
-* 2018-2-27 - (v07.01.05) Process code rename from SmartLocks and update name in app
-* 2018-2-26 - (v07.01.04) Better validation for legacy device handlers and show names for inactive slots
-* 2018-2-23 - (v07.01.03) Automatic reinitailize after detecting code upgrades to avoid errors, increased limit to 120 for code retry interval for legacy users
-* 2018-2-23 - (v07.01.02) Improved pin code length checks
-* 2018-2-21 - (v07.01.01) Added support to arm SHM to Home when locking via keypad
-* 2018-2-14 - (v07.01.00) Fix for ST local DTH bug in updating lock names
-* 2018-2-13 - (v07.00.01) Fix for ST error on update
-* 2018-2-13 - (v07.00.00) User can define number of retries, optimize user pages, don't rewrite all codes only those that have changed
-* 2018-2-5 - (v06.02.00) Added support for locking/unlocking locks and opening/closing garage doors for lock/unlock actions. Added support to change modes for lock actions. Door sensor is now optional for relocking with timeout
-* 2018-2-1 - (v06.01.03) Fix for ST breaking selection of Chime devices with mobile app 2.4.13
-* 2018-1-22 - (v06.01.02) When deleting a user make removing the name optional, bugfix for ST Android mobile app not refreshing page when clearing the code
-* 2018-1-21 - (v06.01.01) Added support for older device handlers to avoid a failure if users forgot to update the device handler
-* 2018-1-17 - (v06.01.00) Added support for maxCodes, codeLength, adding names to SmartLocks and other new DTH features
-* 2018-1-9 - (v06.00.03) Check if start and end time are entered for scheduled users
-* 2018-1-9 - (v06.00.02) Patch for ST not showing separate door enable button value correctly the first time you enable it
+* 2019-08-12 - (v07.09.05) Correct missing geolocation message text
+* 2019-06-03 - (v07.09.04) Added support for new lock capabilities
+* 2019-04-23 - (v07.09.03) Allow 0 users to enable a quick reset of all codes
+* 2019-04-16 - (v07.09.02) Fix optional text for ADT
+* 2019-04-12 - (v07.09.01) Check if user entered invalid characters for SMS number and notify on error
+* 2019-04-03 - (v07.09.00) Enable exit beeping on keypads using direct control for SHM/ADT when delayed actions are enabled
+* 2019-04-02 - (v07.08.12) Check for updates once a day and don't reset it everytime the user opens the app, allow user to save without selecting locks
+* 2019-03-23 - (v07.08.10) Sometimes on a fresh install ST saves corrupted data, handle it
+* 2019-03-20 - (v07.08.09) Detect if a new lock is added and Back is pressed instead of Save
+* 2019-03-18 - (v07.08.08) Show active users in green instead of blue
+* 2019-03-08 - (v07.08.07) Fixed extra notifications when using delayed lock actions
+* 2019-02-28 - (v07.08.06) Enabled keypad SHM/ADT control by default when detected
+* 2019-02-27 - (v07.08.05) Check for updates once a day
+* 2019-01-28 - (v07.08.04) Fix for direct control option not showing for renamed keypads when individual door controls are enabled
+* 2019-01-13 - (v07.08.03) Check for unsaved/unintialized user changes and reinitialize the app automatically
+* 2018-12-13 - (v07.08.02) Reduce frequency to kickstarts since platform is more stable
+* 2018-12-04 - (v07.08.01) Improve UI layout, separate page for notifications
+* 2018-11-28 - (v07.08.00) Check for changes in settings/modes before notifying open doors for delayed checks and have separate actions for each security keypad button (away/stay etc)
+* 2018-11-25 - (v07.07.08) Displaying status of lock codes when all locks aren't selected for a user and synchronize keypad states with SHM/ADT states
+* 2018-10-18 - (v07.07.07) Handle rare bug with ST Android app when updating app maxUserName is not initialized
+* 2018-09-11 - (v07.07.06) Improve notification timing for delayed lock actions
+* 2018-09-08 - (v07.07.05) Clear excess users settings after reducing number of max users
+* 2018-09-03 - (v07.07.04) Set an initial default max users
+* 2018-08-27 - (v07.07.03) Renamed to Lock User Management and added current date as expiration date for new user
+* 2018-08-20 - (v07.07.02) Optimized checking for app updates and improved text layout for automatic relocks
+* 2018-08-01 - (v07.07.00) Added support for Arming/disarming ADT and resume playing the audio after notifications
+* 2018-07-31 - (v07.06.07) More stingent validation for date entry format
+* 2018-07-25 - (v07.06.06) Clean up comments, make Sure Programming Engine hardier, detect is someone added a code accidentally from another app and delete it
+* 2018-07-09 - (v07.06.04) Handle invalid date inputs more gracefully
+* 2018-07-02 - (v07.06.03) More accurate display message when detecting different pin code lengths for locks
+* 2018-06-30 - (v07.06.02) Actively notify user if lock programming fails due to communication issues
+* 2018-06-29 - (v07.06.01) Fix error deleting excess users when reducing count of users and fix user state when selecting locks
+* 2018-06-27 - (v07.06.00) Added indications and messages about pending and failed code updates
+* 2018-06-26 - (v07.05.05) Updated user lock selection description text, fixed custom user notifications
+* 2018-05-31 - (v07.05.04) Correct RFID case to capitals
+* 2018-05-29 - (v07.05.03) Save lock id's instead of names when selecting per user locks to avoid issue of renamed locked/locks with similar names (requires users to reselect locks) and use sensor name instead of lock name for reporting open doors
+* 2018-05-11 - (v07.05.02) Update for platform not saving sms settings for individual users
+* 2018-05-01 - (v07.05.01) Patch for removing burner codes when multiple locks are used simultaneously
+* 2018-04-13 - (v07.05.00) Stop tracking lock users after they are moved from the list of programmed locks, added support for Keypad Locks, fixed bug with arming SHM to Home on lock action
+* 2018-04-12 - (v07.04.04) Log/notify if lock failed to program users, show activate/expire time on summary screen
+* 2018-04-07 - (v07.04.03) Improvement to sure programming engine - handle lock programming failures for missed code notifications with retries, this indicates a underlying failure of the mesh
+* 2018-03-26 - (v07.04.02) Check if ST mobile app saved an invalid start time, handle timezone differences between ST mobile app and hub better
+* 2018-03-19 - (v07.04.00) Added support for custom per user notifications, clarified user types text
+* 2018-03-09 - (v07.03.00) Maintain support for the legacy ZWave / JHampstead device handlers, improved tracking of changed codes, added support for limiting number of code use notifications
+* 2018-03-07 - (v07.02.02) Clarify user type descriptions for easier understanding
+* 2018-03-01 - (v07.02.01) Clean up excess users, handle duplicate codes and lost codes better, fix nameSlot notifications
+* 2018-02-28 - (v07.02.00) Allow no time for schedled users indicating all day, better identification and compatibility with legacy handler reporting, fix ST UI bug not showing code length and remove fix issue with names being resent to the lock due to spaces
+* 2018-02-27 - (v07.01.05) Process code rename from SmartLocks and update name in app
+* 2018-02-26 - (v07.01.04) Better validation for legacy device handlers and show names for inactive slots
+* 2018-02-23 - (v07.01.03) Automatic reinitailize after detecting code upgrades to avoid errors, increased limit to 120 for code retry interval for legacy users
+* 2018-02-23 - (v07.01.02) Improved pin code length checks
+* 2018-02-21 - (v07.01.01) Added support to arm SHM to Home when locking via keypad
+* 2018-02-14 - (v07.01.00) Fix for ST local DTH bug in updating lock names
+* 2018-02-13 - (v07.00.01) Fix for ST error on update
+* 2018-02-13 - (v07.00.00) User can define number of retries, optimize user pages, don't rewrite all codes only those that have changed
+* 2018-02-05 - (v06.02.00) Added support for locking/unlocking locks and opening/closing garage doors for lock/unlock actions. Added support to change modes for lock actions. Door sensor is now optional for relocking with timeout
+* 2018-02-01 - (v06.01.03) Fix for ST breaking selection of Chime devices with mobile app 2.4.13
+* 2018-01-22 - (v06.01.02) When deleting a user make removing the name optional, bugfix for ST Android mobile app not refreshing page when clearing the code
+* 2018-01-21 - (v06.01.01) Added support for older device handlers to avoid a failure if users forgot to update the device handler
+* 2018-01-17 - (v06.01.00) Added support for maxCodes, codeLength, adding names to SmartLocks and other new DTH features
+* 2018-01-09 - (v06.00.03) Check if start and end time are entered for scheduled users, Patch for ST not showing separate door enable button value correctly the first time you enable it
 * 2017-12-15 - (v06.00.01) Fix for manual unlock notifications not being sent
-* 2017-12-4 - (v06.00.00) Added support for stock handler using lock codes, added support for manual lock and unlock actions
+* 2017-12-04 - (v06.00.00) Added support for stock handler using lock codes, added support for manual lock and unlock actions
 * 2017-11-14 - (v06.00.00) Added support for new ST stock DTH, improved code deletion confirmations
-* 2017-11-8 - (v05.10.00) Added support for delayed lock actions and added support to arm SHM on lock and added icons and simplified the UI
+* 2017-11-08 - (v05.10.00) Added support for delayed lock actions and added support to arm SHM on lock and added icons and simplified the UI
 * 2017-10-18 - (v05.09.00) Added check for disabling hardware autolock to use smartapp autorelock and autounlock features, added support for modes and presence based users, fixed bug with notify modes, simplified UI
-* 2017-9-6 - (v05.08.01) Added support for code expirations past midnight
-* 2017-8-1 - (v05.08.00) Fixed expire on with no start date/time, don't verify code deletion if disableRetry is enabled, added ablility to turn on/off switch on external keypad lock
-* 2017-7-5 - (v05.07.00) Patch for ST platform breaking fast programing causing an error
-* 2017-5-31 - (v05.06.00) Code hardering to avoid platform race conditions for one time codes, improved deadbolt automatic unlocking for Schlage locks, added support for playing back on audio systems, added support for bluetooth
-* 2017-5-29 - (v05.05.03) Bugfix for unlocking and locking without codes throwing an error
-* 2017-5-26 - (v05.05.02) Due to ST phone changes, now separate multiple SMS numbers with a *
-* 2017-4-19 - (v05.05.01) Patch for reporting Master Codes
-* 2017-4-11 - (v05.05.00) Added ability to select Chimes for when doors are opened and closed, improved user interface/text, added user presence based notifications
-* 2017-4-11 - (v05.04.01) Fixed grammar for messages
-* 2017-1-25 - (v5.4.0) Added ability to run lock/unlock actions on when the specified users aren't present or not in specific modes, also less verbose messages unless detailed notifications are enabled while running lock and unlock actions
-* 2017-1-12 - (v5.3.1) Added ability to report and run actions on unknown users (some locks don't report use code when unlocking via keypad) and master codes
+* 2017-09-06 - (v05.08.01) Added support for code expirations past midnight
+* 2017-08-01 - (v05.08.00) Fixed expire on with no start date/time, don't verify code deletion if disableRetry is enabled, added ablility to turn on/off switch on external keypad lock
+* 2017-07-05 - (v05.07.00) Patch for ST platform breaking fast programing causing an error
+* 2017-05-31 - (v05.06.00) Code hardering to avoid platform race conditions for one time codes, improved deadbolt automatic unlocking for Schlage locks, added support for playing back on audio systems, added support for bluetooth
+* 2017-05-29 - (v05.05.03) Bugfix for unlocking and locking without codes throwing an error
+* 2017-05-26 - (v05.05.02) Due to ST phone changes, now separate multiple SMS numbers with a *
+* 2017-04-19 - (v05.05.01) Patch for reporting Master Codes
+* 2017-04-11 - (v05.05.00) Added ability to select Chimes for when doors are opened and closed, improved user interface/text, added user presence based notifications
+* 2017-04-11 - (v05.04.01) Fixed grammar for messages
+* 2017-01-25 - (v5.4.0) Added ability to run lock/unlock actions on when the specified users aren't present or not in specific modes, also less verbose messages unless detailed notifications are enabled while running lock and unlock actions
+* 2017-01-12 - (v5.3.1) Added ability to report and run actions on unknown users (some locks don't report use code when unlocking via keypad) and master codes
 * 2016-11-14 - Improved reliability to programming during initial install to avoid lock getting in programming loop, changed multiple SMS separator from + to ;, added 3 programming schedules, improved smartapp update check
 * 2016-10-30 - Added ability to check for new code versions automatically once a week, added ability to check for invalid pin lengths
 * 2016-10-23 - Fixed a bug with expire/schedule code start date/time not working and added option to kick start timer with the arrow touch button on the smartapp
-* 2016-9-28 - Fix for lock selection not working when lock names are changed
-* 2016-9-26 - Fix for broken ST phrases returning null data
-* 2016-9-17 - Fixed issue with cannot change notify settings, highlight error messages, improved invalid date checks, code clean up, added name details when deleting users
-* 2016-9-16 - Fix for actions page not showing up when there are no routines defined on the hub
-* 2016-9-16 - Fix for not being able to enter 0 in the code and fix for ST breaking HREF in 2.2.0
-* 2016-9-15 - Added support to select locks for individual users
-* 2016-9-15 - Added option for details programming notifications and improved reliability of programming
-* 2016-9-13 - Bug fix when mode changes and no sensor is defined for door
-* 2016-9-7 - Auto locks and open door notifications will engage if requried when mode changes
-* 2016-9-2 - Added ability to specify modes of operations for auto door lock
-* 2016-8-30 - Fixed bug with disable all push notifications, it should not disable text notifications and should only work when there is no contact address book
-* 2016-8-17 - Added workaround for ST contact address book bug
-* 2016-8-6 - Added support to auto relock door if the door hasn't been opened after specified timeout
-* 2016-8-5 - Fix for autoRelock and openDoor notifications errors when using large timeout values
-* 2016-8-5 - Fix for rare condition when expire on not process correctly
-* 2016-7-25 - Added support for working with RFID cards
-* 2016-7-22 - Added support for contact address book for customers who have this feature enabled
-* 2016-7-19 - Updated code to use harmonized universal DH with type event instead of outsideLockEvent
-* 2016-7-17 - Improvement to the unlocking and relocking logic
-* 2016-7-17 - Workaround for platform calling installed and updated when installing the SmartApp
-* 2016-7-17 - Bugfix for checking if codes are reused (type in code)
-* 2016-7-17 - Clear codes on installing the app the first time to avoid conflict with lock and reduce unnecessary delay in programming
-* 2016-7-17 - Put in a check to not enable automatic unlock if autolock in the door is enabled
-* 2016-7-14 - Improved notifications
-* 2016-7-13 - Added support for tamper events and when using user codes to lock the door from the keypad
-* 2016-7-10 - Added support for running routine when the door is locked using external keypad lock button
-* 2016-7-5 - Added support for notifications if door is left open, added support for delayed relock for multiple door and various minor UI improvements
-* 2016-5-15 - Added check for no existent timezone and notify user
-* 2016-4-20 - Added client version on main page
-* 2016-4-8 - Added support for notification modes for unlocking (and improved UI)
-* 2016-4-8 - Bugfix for jammed and manual lock notifications not coming
-* 2016-3-21 - Added a heartbeat system to improve the reliability of the code check scheduler to compensate for the issues folks are seeing with the ST platform broken timers
-* 2016-2-27 - Renamed option to retry to clarify, now it is to stop reverrification and overwriting all codes (default is incremental updates)
-* 2016-2-25 - Added support for tracking deleted codes confirmation from lock and retrying if lock doesn't confirm code deletions
-* 2016-2-20 - Added slot notification for unknown users
-* 2016-2-15 - Added current date/time stamp on hub for debugging timezone mismatches
-* 2016-2-15 - Default coding interval is now 60 seconds as the platform is crapping out in shorter intervals
-* 2016-2-15 - Revamped code initialization to work around crappy ST timers and make programming more reliable. Using dual programming strategy now to make it more redundant
-* 2016-1-23 - Added user specific unlock actions (override actions)
-* 2016-1-19 - Fixed a debug error message about empty slots sharing a null code
-* 2016-1-19 - Added comments
-* 2016-1-17 - You can specify multiple sms phone numbers by putting a + to separate them
-* 2016-1-15 - Validation check, same code cannot be used for more than one user
-* 2016-1-13 - Debug message
-* 2016-1-10 - Added option to disable retrying code programming on failure
-* 2016-1-5 - Revamped code to verify with lock that codes have been successfully added and keep retrying until codes have been added
+* 2016-09-28 - Fix for lock selection not working when lock names are changed
+* 2016-09-26 - Fix for broken ST phrases returning null data
+* 2016-09-17 - Fixed issue with cannot change notify settings, highlight error messages, improved invalid date checks, code clean up, added name details when deleting users
+* 2016-09-16 - Fix for actions page not showing up when there are no routines defined on the hub, Fix for not being able to enter 0 in the code and fix for ST breaking HREF in 2.2.0
+* 2016-09-15 - Added support to select locks for individual users, Added option for details programming notifications and improved reliability of programming
+* 2016-09-13 - Bug fix when mode changes and no sensor is defined for door
+* 2016-09-07 - Auto locks and open door notifications will engage if requried when mode changes
+* 2016-09-02 - Added ability to specify modes of operations for auto door lock
+* 2016-08-30 - Fixed bug with disable all push notifications, it should not disable text notifications and should only work when there is no contact address book
+* 2016-08-17 - Added workaround for ST contact address book bug
+* 2016-08-06 - Added support to auto relock door if the door hasn't been opened after specified timeout
+* 2016-08-05 - Fix for autoRelock and openDoor notifications errors when using large timeout values, Fix for rare condition when expire on not process correctly
+* 2016-07-25 - Added support for working with RFID cards
+* 2016-07-22 - Added support for contact address book for customers who have this feature enabled
+* 2016-07-19 - Updated code to use harmonized universal DH with type event instead of outsideLockEvent
+* 2016-07-17 - Improvement to the unlocking and relocking logic, Workaround for platform calling installed and updated when installing the SmartApp, Bugfix for checking if codes are reused (type in code), Clear codes on installing the app the first time to avoid conflict with lock and reduce unnecessary delay in programming, Put in a check to not enable automatic unlock if autolock in the door is enabled
+* 2016-07-14 - Improved notifications
+* 2016-07-13 - Added support for tamper events and when using user codes to lock the door from the keypad
+* 2016-07-10 - Added support for running routine when the door is locked using external keypad lock button
+* 2016-07-05 - Added support for notifications if door is left open, added support for delayed relock for multiple door and various minor UI improvements
+* 2016-05-15 - Added check for no existent timezone and notify user
+* 2016-04-20 - Added client version on main page
+* 2016-04-08 - Added support for notification modes for unlocking (and improved UI), bugfix for jammed and manual lock notifications not coming
+* 2016-03-21 - Added a heartbeat system to improve the reliability of the code check scheduler to compensate for the issues folks are seeing with the ST platform broken timers
+* 2016-02-27 - Renamed option to retry to clarify, now it is to stop reverrification and overwriting all codes (default is incremental updates)
+* 2016-02-25 - Added support for tracking deleted codes confirmation from lock and retrying if lock doesn't confirm code deletions
+* 2016-02-20 - Added slot notification for unknown users
+* 2016-02-15 - Added current date/time stamp on hub for debugging timezone mismatches, Default coding interval is now 60 seconds as the platform is crapping out in shorter intervals, Revamped code initialization to work around crappy ST timers and make programming more reliable. Using dual programming strategy now to make it more redundant
+* 2016-01-23 - Added user specific unlock actions (override actions)
+* 2016-01-19 - Fixed a debug error message about empty slots sharing a null code, Added comments
+* 2016-01-17 - You can specify multiple sms phone numbers by putting a + to separate them
+* 2016-01-15 - Validation check, same code cannot be used for more than one user
+* 2016-01-13 - Debug message
+* 2016-01-10 - Added option to disable retrying code programming on failure
+* 2016-01-05 - Revamped code to verify with lock that codes have been successfully added and keep retrying until codes have been added
 * 2015-12-18 - Added subcription to random events to kick start timers to work around buggy platform, use runEveryXMinutes where possible to hopefully improve the situation
-* 2015-12-8 - Comment clarifications
-* 2015-12-2 - Clean up
-* 2015-11-28 - Added a delay to locking multiple doors to avoid mesh collisions
-* 2015-11-28 - Use atomicState for automatic relocking to avoid race conditions
-* 2015-11-28 - Select Door sensor independent of relock
+* 2015-12-08 - Comment clarifications
+* 2015-12-02 - Clean up
+* 2015-11-28 - Added a delay to locking multiple doors to avoid mesh collisions, Use atomicState for automatic relocking to avoid race conditions, Select Door sensor independent of relock
 * 2015-11-27 - Added support to relock doors after they have been closed with an optional delay timer and to retract deadbolts if door is open
 * 2015-11-25 - Refresh the page after selecting the locks to that the individual options show up
 * 2015-11-24 - Added support to show expired codes on configuration page
-* 2015-11-22 - Added support for differentiate between manual lock and electronic lock (keypad/remote) while notifying user
-* 2015-11-22 - Clarified input text for turning on lights after dark
-* 2015-11-21 - Added support for individual door unlock actions
-* 2015-11-21 - Added support to turn on lights 30 minutes before sunset (dark)
-* 2015-11-21 - Added support to send notitications when too many invalid codes are reported by the lock
-* 2015-11-21 - Added option 'Inactive' to the list of code types so one can keep the name/code on the slot but not have it active
-* 2015-11-8 - Added option to switch on lights after dark (sunset to next sunrise)
+* 2015-11-22 - Added support for differentiate between manual lock and electronic lock (keypad/remote) while notifying user, Clarified input text for turning on lights after dark
+* 2015-11-21 - Added support for individual door unlock actions, Added support to turn on lights 30 minutes before sunset (dark), Added support to send notitications when too many invalid codes are reported by the lock, Added option 'Inactive' to the list of code types so one can keep the name/code on the slot but not have it active
+* 2015-11-08 - Added option to switch on lights after dark (sunset to next sunrise)
 * 2015-10-28 - Optimized disarming SHM as the first action on unlocking to help avoid false alarms
 * 2015-10-26 - Added error checking for empty codes
-* 2015-10-26 - Fixed a bug with one time codes
-* 2015-10-26 - Added support for start date/time for expiration codes
-* 2015-10-26 - Improved reliability when controlling multiple locks with a single app instance
-* 2015-9-28 - Added support for lock notifications
-* 2015-9-26 - Added support to turn on/off switches when a user unlocks the door with a code
-* 2015-9-26 - Fixed a bug with mode changes when unlocking
-* 2015-9-18 - Added option to disarm Smart Home Monitor mode when unlocking, added option to select modes when notifying on manual unlock
-* 2015-9-2 - Fixed issue, don't run home phrase or change mode on manual unlock
-* 2015-9-1 - Improve text clarity
-* 2015-8-26 - Added support for running a phrase and changing modes when doors are unlocked successfully
-* 2015-7-25 - Potential fix for preventing the timers from dying
-* 2015-7-23 - Fix for monitoring not working after a mode change
-* 2015-7-22 - Added support for advanced scheduling options for individual users codes including permanent, one time, expiration and scheduled
-* 2015-7-22 - Use the standard "unknown" lock state to check for jammed
-* 2015-7-6 - Fixed issue with code expiry not working
-* 2015-6-18 - Added option to change delay between sending codes for users who have issues with communications
-* 2015-6-18 - Added notification for jammed door locks
-* 2015-6-17 - Fix for dynamic preferences not working after ST platform update
-* 2015-6-9 - Added support to disable push notifications only
-* 2015-5-27 - Added support for expiration dates
-* 2015-2-20 - Fixed issue with SMS not being sent
-* 2015-1-9 - Improve reliability with coding
-* 2015-1-1 - Created
+* 2015-10-26 - Fixed a bug with one time codes, Added support for start date/time for expiration codes, Improved reliability when controlling multiple locks with a single app instance
+* 2015-09-28 - Added support for lock notifications
+* 2015-09-26 - Added support to turn on/off switches when a user unlocks the door with a code, Fixed a bug with mode changes when unlocking
+* 2015-09-18 - Added option to disarm Smart Home Monitor mode when unlocking, added option to select modes when notifying on manual unlock
+* 2015-09-02 - Fixed issue, don't run home phrase or change mode on manual unlock
+* 2015-09-01 - Improve text clarity
+* 2015-08-26 - Added support for running a phrase and changing modes when doors are unlocked successfully
+* 2015-07-25 - Potential fix for preventing the timers from dying
+* 2015-07-23 - Fix for monitoring not working after a mode change
+* 2015-07-22 - Added support for advanced scheduling options for individual users codes including permanent, one time, expiration and scheduled
+* 2015-07-22 - Use the standard "unknown" lock state to check for jammed
+* 2015-07-06 - Fixed issue with code expiry not working
+* 2015-06-18 - Added option to change delay between sending codes for users who have issues with communications, Added notification for jammed door locks
+* 2015-06-17 - Fix for dynamic preferences not working after ST platform update
+* 2015-06-09 - Added support to disable push notifications only
+* 2015-05-27 - Added support for expiration dates
+* 2015-02-20 - Fixed issue with SMS not being sent
+* 2015-01-09 - Improve reliability with coding
+* 2015-01-01 - Created
 *
 */
 
@@ -184,16 +185,18 @@ definition(
     author: "RBoy Apps",
     description: "Manage Lock User Codes with Scheduling, Actions and Notifications",
     category: "Safety & Security",
-    iconUrl: "https://s3.amazonaws.com/smartapp-icons/Allstate/lock_it_when_i_leave.png",
-    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Allstate/lock_it_when_i_leave@2x.png"
+    iconUrl: "http://www.rboyapps.com/images/LUM.png",
+    iconX2Url: "http://www.rboyapps.com/images/LUM.png"
 )
 
 preferences {
     page(name: "setupApp")
     page(name: "usersPage")
+    page(name: "notificationsPage")
     page(name: "unlockLockActionsPage")
     page(name: "unlockKeypadActionsPage")
     page(name: "unlockManualActionsPage")
+    page(name: "armKeypadActionsPage")
     page(name: "lockKeypadActionsPage")
     page(name: "lockManualActionsPage")
     page(name: "openCloseDoorPage")
@@ -201,8 +204,9 @@ preferences {
     page(name: "userConfigPage")
 }
 
-private getDefaultSendDelay() { 15 }
-private getDefaultRetries() { 5 }
+private getDefaultMaxUsers() { 10 } // Max users
+private getDefaultSendDelay() { 15 } // Delay between code programming 
+private getDefaultRetries() { 5 } // Number of retries for failed / no response programming
 private getMaxRetries() { retries == null ? defaultRetries : retries }
 private getSchedulesSuffix() { ('A'..'C') }
 private getCodeOptions() {
@@ -235,65 +239,108 @@ def setupApp() {
     log.trace "$settings"
 
     dynamicPage(name: "setupApp", title: "Lock User Management v${clientVersion()}", install: true, uninstall: true) {
-        section("Select Lock(s)") {
-            // Check if the lock pin code length match on all the locks
-            def pinDetails = getLockPinLengthDetails()
-            def pinLen = pinDetails.pinLen // Fixed pin code length
-            def maxPinLen = pinDetails.maxPinLen // Variable minimum pin code length
-            def minPinLen = pinDetails.minPinLen // Variable maximum pin code length
-            def pinLenError = pinDetails.pinLenError
-            log.trace "Configured lock fixed code length: $pinLen, max code length: $maxPinLen, min code length: $minPinLen"
-            if (pinLenError) {
-                def msg = "YOUR LOCKS ARE CONFIGURED TO ACCEPT DIFFERENT CODE DIGIT LENGTHS, PROGRAMMING MAY FAIL!"
-                paragraph title: msg, required: true, ""
+        if (state.clientVersion) { // If the app has already been installed
+            section("Select Lock(s)") {
+                // Check if the lock pin code length match on all the locks
+                def pinDetails = getLockPinLengthDetails()
+                def pinLen = pinDetails.pinLen // Fixed pin code length
+                def maxPinLen = pinDetails.maxPinLen // Variable minimum pin code length
+                def minPinLen = pinDetails.minPinLen // Variable maximum pin code length
+                def pinLenError = pinDetails.pinLenError
+                log.trace "Configured lock fixed code length: $pinLen, max code length: $maxPinLen, min code length: $minPinLen"
+                if (pinLenError) {
+                    def msg = "YOUR LOCKS ARE CONFIGURED TO ACCEPT DIFFERENT CODE DIGIT LENGTHS, PROGRAMMING MAY FAIL!"
+                    paragraph title: msg, required: true, ""
+                }
+                input "locks", "capability.lock", title: "Lock(s)", required: false, multiple: true, submitOnChange: true, image: "http://www.rboyapps.com/images/HandleLock.png"
             }
-            input "locks","capability.lock", title: "Lock(s)", multiple: true, submitOnChange: true, image: "http://www.rboyapps.com/images/HandleLock.png"
-        }
 
-        section("User Management") {
-            def maxCodes = 0
-            for (lock in locks) {
-                Integer lockMax = lock.hasAttribute("maxCodes") ? lock.currentValue("maxCodes") : 0
-                log.trace "$lock has max users: $lockMax"
-                maxCodes = maxCodes ? (lockMax ? Math.min(lockMax, maxCodes) as Integer : maxCodes) : (lockMax ?: 0) // Take the least amongst all selected locks
+            section("User Management") {
+                log.trace "state.previousMaxUserNames: ${state.previousMaxUserNames?.inspect()}, maxUserNames: ${maxUserNames?.inspect()}"
+                // Bug in ST Classic app, if users presses back on new installation without pressing Save, it saves the default values as a String
+                if ((maxUserNames != null) && ((state.previousMaxUserNames as Integer) > (maxUserNames as Integer))) { // If the number of max users has reduced, then clear excess the slots
+                    log.debug "Detected a reduction in number of maxUserNames, clearing rental user slots ${(maxUserNames as Integer) + 1} to ${(state.previousMaxUserNames as Integer)}"
+                    startTimer(1, removeUsersOffline, [ data : (((maxUserNames as Integer) + 1)..(state.previousMaxUserNames as Integer)).collect { it } ]) // Clear the slots
+                } // Clear excess users offline so it doesn't slow down the UI (do it while reducing users so that when you increase the slots are already cleared)
+
+                state.previousMaxUserNames = maxUserNames as Integer // Reset it (bug on a fresh install ST sometimes stores it as a String)
+
+                def maxCodes = 0
+                for (lock in locks) {
+                    def lockMax = (lock.hasAttribute("maxCodes") ? lock.currentValue("maxCodes") : 0) as Integer
+                    log.trace "$lock has max users: $lockMax"
+                    maxCodes = maxCodes ? (lockMax ? Math.min(lockMax, maxCodes) as Integer : maxCodes) : (lockMax ?: 0) // Take the least amongst all selected locks
+                }
+                input name: "maxUserNames", title: "Number of users${maxCodes ? " (0 to ${maxCodes})" : ""}", type: "number", defaultValue: defaultMaxUsers, required: true, multiple: false, image: "http://www.rboyapps.com/images/Users.png", range: "0..${maxCodes ?: 999}", submitOnChange: true
+                href(name: "users", title: "Manage users", page: "usersPage", description: "Create users and custom actions", required: false, image: "http://www.rboyapps.com/images/UserPage.png")
             }
-            input name: "maxUserNames", title: "Number of users${maxCodes ? " (1 to ${maxCodes})" : ""}", type: "number", required: true, multiple: false, image: "http://www.rboyapps.com/images/Users.png", range: "1..${maxCodes ?: 999}"
-            href(name: "users", title: "Manage users", page: "usersPage", description: "Create users and custom actions", required: false, image: "http://www.rboyapps.com/images/User.png")
-        }
 
-        section("General Settings") {
-            // Unlock actions for all users (global)
-            def hrefParams = [
-                user: null, 
-                passed: true 
-            ]
-            href(name: "unlockLockActions", params: hrefParams, title: "Lock/unlock actions", page: "unlockLockActionsPage", description: "", required: false, image: "http://www.rboyapps.com/images/LockUnlock.png")
-            href(name: "openCloseDoor", title: "Door open/close actions", page: "openCloseDoorPage", description: "", required: false, image: "http://www.rboyapps.com/images/DoorOpenClose.png")
-
-            input("recipients", "contact", title: "Send notifications to", multiple: true, required: false, image: "http://www.rboyapps.com/images/Notifications.png") {
-                paragraph "You can enter multiple phone numbers to send an SMS to by separating them with a '*'. E.g. 5551234567*+448747654321"
-                input name: "sms", title: "Send SMS notification to (optional):", type: "phone", required: false
-                paragraph "Enable the below option if you DON'T want push notifications on your SmartThings phone app."
-                input name: "disableAllNotify", title: "Disable all push notifications", type: "bool", defaultValue: "false", required: true
+            section("General Settings") {
+                // Unlock actions for all users (global)
+                def hrefParams = [
+                    user: null, 
+                    passed: true 
+                ]
+                href(name: "unlockLockActions", params: hrefParams, title: "Lock/unlock actions", page: "unlockLockActionsPage", description: "", required: false, image: "http://www.rboyapps.com/images/LockUnlock.png")
+                href(name: "openCloseDoor", title: "Door open/close actions", page: "openCloseDoorPage", description: "", required: false, image: "http://www.rboyapps.com/images/DoorOpenClose.png")
+                href(name: "notifications", params: hrefParams, title: "Notifications", page: "notificationsPage", description: "", required: false, image: "http://www.rboyapps.com/images/NotificationsD.png")
             }
-            input "audioDevices", "capability.audioNotification", title: "Play notifications on these devices", required: false, multiple: true, image: "http://www.rboyapps.com/images/Horn.png"
-        }
 
-        section() {
-            label title: "Assign a name for this SmartApp (optional)", required: false
-            input name: "disableUpdateNotifications", title: "Don't check for new versions of the app", type: "bool", required: false
-        }
+            section() {
+                label title: "Assign a name for this SmartApp (optional)", required: false
+                input name: "updateNotifications", title: "Check for new versions of the app", type: "bool", defaultValue: true, required: false
+            }
 
-        section("Code Programming Options (advanced) (optional)", hideable: true, hidden: true) {
-            paragraph "Sure-Programming: To improve programming reliability, the app will keep trying to program the user codes until the lock confirms the programming or up to the maximum number of retries"
-            input name: "retries", title: "Maximum code programming retries", type: "number", defaultValue: "${defaultRetries}", range: "0..10", required: false
-            paragraph "Change this setting if all the user codes aren't being programmed on the lock correctly. This settings determines the time gap between sending each user code to the lock. If the codes are sent too fast, they may fail to be set properly"
-            input name: "sendDelay", title: "Delay between codes (seconds):", type: "number", defaultValue: "${defaultSendDelay}", range: "5..120", required: false
-            paragraph "Enable this to get additional detailed notifications like code programming, lock responses etc. NOTE: this can generate a lot of messages"
-            input name: "detailedNotifications", title: "Get detailed notifications", type: "bool", defaultValue: "false", required: false
+            section("Advanced Programming Options (optional)", hideable: true, hidden: true) {
+                paragraph "Sure-Programming: To improve programming reliability, the app will keep trying to program the user codes until the lock confirms the programming or up to the maximum number of retries"
+                input name: "retries", title: "Maximum code programming retries", type: "number", defaultValue: "${defaultRetries}", range: "0..10", required: false
+                paragraph "Change this setting if all the user codes aren't being programmed on the lock correctly. This settings determines the time gap between sending each user code to the lock. If the codes are sent too fast, they may fail to be set properly"
+                input name: "sendDelay", title: "Delay between codes (seconds):", type: "number", defaultValue: "${defaultSendDelay}", range: "5..120", required: false
+                paragraph "Enable this to get additional detailed notifications like code programming, lock responses etc. NOTE: this can generate a lot of messages"
+                input name: "detailedNotifications", title: "Get detailed notifications", type: "bool", defaultValue: "false", required: false
+            }
+        } else {
+            section() {
+                paragraph "Click on 'Save' to install the app\n\nThen you can open it from the 'Automations' tab to finish configuring it"
+                label title: "Assign a name for this SmartApp (optional)", required: false
+            }
         }
         
         remove("Uninstall")
+    }
+}
+
+def notificationsPage(params) {
+    //  params is broken, after doing a submitOnChange on this page, params is lost. So as a work around when this page is called with params save it to state and if the page is called with no params we know it's the bug and use the last state instead
+    if (params.passed) {
+        atomicState.params = params // We got something, so save it otherwise it's a page refresh for submitOnChange
+    }
+
+    def user = ""
+    // Get details from the passed in params when the page is loading, else get from the last saved to work around not having params on pages
+    if (params.passed) {
+        user = params.user ?: ""
+        log.trace "Passed from main page, using params lookup for user $user"
+    } else if (atomicState.params) {
+        user = atomicState.params.user ?: ""
+        log.trace "Passed from submitOnChange, atomicState lookup for user $user"
+    } else {
+        log.error "Invalid params, no user found. Params: $params, saved params: $atomicState.params"
+    }
+    
+    def name = user ? settings."userNames${user}" : ""
+
+    log.trace "Notifications Page, user:$user, name:$name, passed params: $params, saved params:$atomicState.params"
+
+    dynamicPage(name:"notificationsPage", title: (user ? "Setup custom notifications for ${name ?: "user ${user}"}" : "Setup notification options"), uninstall: false, install: false) {
+        section {
+            input "audioDevices${user}", "capability.audioNotification", title: "Speak notifications on", required: false, multiple: true, image: "http://www.rboyapps.com/images/Horn.png"
+            input("recipients${user}", "contact", title: "Send notifications to", multiple: true, required: false, image: "http://www.rboyapps.com/images/Notifications.png") {
+                paragraph "You can enter multiple phone numbers by separating them with a '*'\nE.g. 5551234567*+448747654321"
+                input "sms${user}", "phone", title: "Send SMS notification to", required: false, image: "http://www.rboyapps.com/images/Notifications.png"
+                input "disableAllNotify${user}", "bool", title: "Disable all push notifications${user ? " for " + (name ?: "user ${user}") : ""}", defaultValue: false, required: false
+            }
+        }
     }
 }
 
@@ -433,13 +480,11 @@ def unlockLockActionsPage(params) {
                     showCustomNotifications = false
                 }
                 if (showCustomNotifications) {
-                    input("recipients${user}", "contact", title: "Send notifications to", multiple: true, required: false, image: "http://www.rboyapps.com/images/Notifications.png") {
-                        paragraph "You can enter multiple phone numbers to send an SMS to by separating them with a '*'. E.g. 5551234567*+448747654321"
-                        input "sms${user}", "phone", title: "Send SMS notification to (optional):", required: false
-                        paragraph "Enable the below option if you DON'T want push notifications for ${name ?: "user ${user}"} on your SmartThings phone app."
-                        input "disableAllNotify${user}", "bool", title: "Disable all push notifications for ${name ?: "user ${user}"}", defaultValue: "false", required: true
-                    }
-                    input "audioDevices${user}", "capability.audioNotification", title: "Play notifications on these devices", required: false, multiple: true, image: "http://www.rboyapps.com/images/Horn.png"
+                    def hrefParams = [
+                        user: user, 
+                        passed: true 
+                    ]
+                    href(name: "notifications", params: hrefParams, title: "Notifications", page: "notificationsPage", description: "", required: false, image: "http://www.rboyapps.com/images/NotificationsD.png")
                 }
             }
         }
@@ -481,23 +526,24 @@ def unlockKeypadActionsPage(params) {
         section ("Door Keypad Unlock Actions${lock ? " for $lock" : ""}") {
             def priorHomePhrase = settings."homePhrase${lock}${user}"
             def priorHomeMode = settings."homeMode${lock}${user}"
-            def isLockKeypad = locks?.find{ it.name == lock }?.hasAttribute("armMode") // Check if the current lock (lock specific option) is a keypad
+            def isLockKeypad = locks?.find{ it.displayName == lock }?.hasAttribute("armMode") // Check if the current lock (lock specific option) is a keypad
             def isAnyLockKeypad = locks?.any { keypad -> keypad.hasAttribute("armMode") } // Check if any lock (for global options) is a keypad
+            def areAllLockKeypad = locks?.every { keypad -> keypad.hasAttribute("armMode") } // Check every lock (for global options) is a keypad
             
             paragraph "Run these actions when a user successfully unlocks the door using a code"
-            input "homePhrase${lock}${user}", "enum", title: "Run routine", required: false, options: phrases, defaultValue: priorHomePhrase
-            input "homeMode${lock}${user}", "mode", title: "Change mode to", required: false, multiple: false, defaultValue: priorHomeMode
-            if (lock ? (isLockKeypad ? !settings."keypadArmDisarm${lock}${user}" : true) : true) { // Hide only if we have have a supported keypad for selected lock and using keypad to control SHM
+            if (lock ? isLockKeypad : isAnyLockKeypad) { // Show only if we have a supported keypad (for selected lock or for general settings)
+                input "keypadArmDisarm${lock}${user}", "bool", title: "Control SHM/ADT using keypad", required: false, submitOnChange: true, defaultValue: true
+            }
+            if (lock ? (isLockKeypad ? !(settings."keypadArmDisarm${lock}${user}" != false) : true) : (areAllLockKeypad ? !(settings."keypadArmDisarm${lock}${user}" != false) : true)) { // Hide only if we have have a supported keypad for selected lock and using keypad to control SHM
                 input "homeDisarm${lock}${user}", "bool", title: "Disarm Smart Home Monitor", required: false
                 input "adtDisarm${lock}${user}", "bool", title: "Disarm ADT", required: false, submitOnChange: true
             }
-            if (lock ? isLockKeypad : isAnyLockKeypad) { // Show only if we have a supported keypad (for selected lock or for general settings)
-                input "keypadArmDisarm${lock}${user}", "bool", title: "Control SHM/ADT using keypad", required: false, submitOnChange: true
+            if (((lock ? (isLockKeypad ? !(settings."keypadArmDisarm${lock}${user}" != false) : true) : (areAllLockKeypad ? !(settings."keypadArmDisarm${lock}${user}" != false) : true)) && settings."adtDisarm${lock}${user}") ||
+                ((lock ? isLockKeypad : isAnyLockKeypad) && (settings."keypadArmDisarm${lock}${user}" != false))) { // If we have a seleted an ADT option
+                input "adtDevices", "capability.battery", title: "Select ADT panel${settings."adtDisarm${lock}${user}" ? "" : " (optional)"}", multiple: false, required: (settings."adtDisarm${lock}${user}" ? true : false) // Required if we select ADT
             }
-            if (((lock ? (isLockKeypad ? !settings."keypadArmDisarm${lock}${user}" : true) : true) && settings."adtDisarm${lock}${user}") ||
-                ((lock ? isLockKeypad : isAnyLockKeypad) && settings."keypadArmDisarm${lock}${user}")) { // If we have a seleted an ADT option
-                input "adtDevices", "capability.battery", title: "Select ADT panel(s)", multiple: true, required: (settings."adtDisarm${lock}${user}" ? true : false) // Required if we select ADT
-            }
+            input "homePhrase${lock}${user}", "enum", title: "Run routine", required: false, options: phrases, defaultValue: priorHomePhrase
+            input "homeMode${lock}${user}", "mode", title: "Change mode to", required: false, multiple: false, defaultValue: priorHomeMode
             input "turnOnSwitchesAfterSunset${lock}${user}", "capability.switch", title: "Turn on light(s) after dark", required: false, multiple: true
             input "turnOnSwitches${lock}${user}", "capability.switch", title: "Turn on switch(s)", required: false, multiple: true
             input "turnOffSwitches${lock}${user}", "capability.switch", title: "Turn off switch(s)", required: false, multiple: true
@@ -544,13 +590,13 @@ def unlockManualActionsPage(params) {
             def priorManualNotify = settings."manualNotify${lock}"
 
             paragraph "Run these actions when a user unlocks the door manually"
-            input "homePhraseManual${lock}", "enum", title: "Run routine", required: false, options: phrases, defaultValue: priorHomePhrase
-            input "homeModeManual${lock}", "mode", title: "Change mode to", required: false, multiple: false, defaultValue: priorHomeMode
             input "homeDisarmManual${lock}", "bool", title: "Disarm Smart Home Monitor", required: false
             input "adtDisarmManual${lock}", "bool", title: "Disarm ADT", required: false, submitOnChange: true
             if (settings."adtDisarmManual${lock}") { // If we have a seleted an ADT option
-                input "adtDevices", "capability.battery", title: "Select ADT panel(s)", multiple: true, required: true // Required if we select ADT
+                input "adtDevices", "capability.battery", title: "Select ADT panel", multiple: false, required: true // Required if we select ADT
             }
+            input "homePhraseManual${lock}", "enum", title: "Run routine", required: false, options: phrases, defaultValue: priorHomePhrase
+            input "homeModeManual${lock}", "mode", title: "Change mode to", required: false, multiple: false, defaultValue: priorHomeMode
             input "turnOnSwitchesAfterSunsetManual${lock}", "capability.switch", title: "Turn on light(s) after dark", required: false, multiple: true
             input "turnOnSwitchesManual${lock}", "capability.switch", title: "Turn on switch(s)", required: false, multiple: true
             input "turnOffSwitchesManual${lock}", "capability.switch", title: "Turn off switch(s)", required: false, multiple: true
@@ -565,6 +611,51 @@ def unlockManualActionsPage(params) {
             input "manualNotify${lock}", "bool", title: "Notify on manual unlock", required: false, submitOnChange: true
             if (priorManualNotify) {
                 input "manualNotifyModes${lock}", "mode", title: "...only when in this mode(s) (optional)", required: false, multiple: true
+            }
+        }
+    }
+}
+
+def armKeypadActionsPage(params) {
+    // params is broken, after doing a submitOnChange on this page, params is lost. So as a work around when this page is called with params save it to state and if the page is called with no params we know it's the bug and use the last state instead
+    // Get details from the passed in params when the page is loading, else get from the last saved to work around not having params on pages
+    if (params.passed) {
+        atomicState.params = params // We got something, so save it otherwise it's a page refresh for submitOnChange
+        log.trace "Passed from main page, using params lookup ${params}"
+    } else if (atomicState.params) {
+        params = atomicState.params
+        log.trace "Passed from submitOnChange, atomicState lookup ${atomicState.params}"
+    } else {
+        log.error "Invalid params, no user found. Params: $params, saved params: $atomicState.params"
+    }
+    
+    def user = params?.user ?: ""
+    def lock = params?.lock ?: ""
+    def arm = params?.arm ?: ""
+
+    def name = user ? settings."userNames${user}" : ""
+
+    log.trace "Arm Keypad Action Page, user:$user, name:$name, lock $lock, arm $arm, passed params: $params, saved params:$atomicState.params"
+
+    dynamicPage(name:"armKeypadActionsPage", title: "Setup Arm ${arm?.capitalize()} button actions for ${lock ?: "keypad"}" + (user ? " for user $name." : ""), uninstall: false, install: false) {
+        def phrases = location.helloHome?.getPhrases()
+        phrases = phrases ? phrases*.label?.sort() - null : [] // Check for null ghost routines
+        if (!phrases) { // This should not happen, it should be taken care of in parent page
+            log.warn "No Routines found!!!"
+        }
+
+        section {
+            input "keypadArmActions${lock}${user}${arm}", "bool", title: "Enable custom actions", required: false, submitOnChange: true
+            if (settings."keypadArmActions${lock}${user}${arm}") {
+                def priorLockPhrase = settings."externalLockPhrase${lock}${user}${arm}"
+                def priorHomeMode = settings."externalLockMode${lock}${user}${arm}"
+
+                input "externalLockPhrase${lock}${user}${arm}", "enum", title: "Run routine", required: false, options: phrases, defaultValue: priorLockPhrase
+                input "externalLockMode${lock}${user}${arm}", "mode", title: "Change mode to", required: false, multiple: false, defaultValue: priorHomeMode
+                input "externalLockTurnOnSwitches${lock}${user}${arm}", "capability.switch", title: "Turn on switch(s)", required: false, multiple: true
+                input "externalLockTurnOffSwitches${lock}${user}${arm}", "capability.switch", title: "Turn off switch(s)", required: false, multiple: true
+                input "lockLocks${lock}${user}${arm}","capability.lock", title: "Lock lock(s)", required: false, multiple: true
+                input "closeGarage${lock}${user}${arm}","capability.garageDoorControl", title: "Close garage door(s)", required: false, multiple: true
             }
         }
     }
@@ -605,35 +696,43 @@ def lockKeypadActionsPage(params) {
         section ("Door Keypad Lock Actions${lock ? " for $lock" : ""}") {
             def priorLockPhrase = settings."externalLockPhrase${lock}${user}"
             def priorHomeMode = settings."externalLockMode${lock}${user}"
-            def isLockKeypad = locks?.find{ it.name == lock }?.hasAttribute("armMode") // Check if the current lock (lock specific option) is a keypad
+            def isLockKeypad = locks?.find{ it.displayName == lock }?.hasAttribute("armMode") // Check if the current lock (lock specific option) is a keypad
             def isAnyLockKeypad = locks?.any { keypad -> keypad.hasAttribute("armMode") } // Check if any lock (for global options) is a keypad
-
+            def areAllLockKeypad = locks?.every { keypad -> keypad.hasAttribute("armMode") } // Check every lock (for global options) is a keypad
+            
             paragraph "Some locks can be locked from the keypad outside${user ? " with user codes" : ""}. If your lock has his feature then you can assign actions to execute when it is locked ${user ? "with a user code" : "from the keypad"}"
-            input "externalLockPhrase${lock}${user}", "enum", title: "Run routine", required: false, options: phrases, defaultValue: priorLockPhrase
-            input "externalLockMode${lock}${user}", "mode", title: "Change mode to", required: false, multiple: false, defaultValue: priorHomeMode
-            if (lock ? (isLockKeypad ? !settings."keypadArmDisarm${lock}${user}" : true) : true) { // Hide only if we have have a supported keypad for selected lock and using keypad to control SHM
+            if (lock ? isLockKeypad : isAnyLockKeypad) { // Show only if we have a supported keypad (for selected lock or for general settings)
+                input "keypadArmDisarm${lock}${user}", "bool", title: "Control SHM/ADT using keypad", required: false, submitOnChange: true, defaultValue: true
+            }
+            if (lock ? (isLockKeypad ? !(settings."keypadArmDisarm${lock}${user}" != false) : true) : (areAllLockKeypad ? !(settings."keypadArmDisarm${lock}${user}" != false) : true)) { // Hide only if we have have a supported keypad for selected lock and using keypad to control SHM
                 input "homeArm${lock}${user}", "bool", title: "Arm Smart Home Monitor to Away", required: false, submitOnChange: true
                 input "adtArm${lock}${user}", "bool", title: "Arm ADT to Away", required: false, submitOnChange: true
                 if (settings."homeArm${lock}${user}" || settings."adtArm${lock}${user}") {
                     input "homeArmStay${lock}${user}", "bool", title: "...arm to Stay instead of Away", required: false
                 }
             }
+            if (((lock ? (isLockKeypad ? !(settings."keypadArmDisarm${lock}${user}" != false) : true) : (areAllLockKeypad ? !(settings."keypadArmDisarm${lock}${user}" != false) : true)) && settings."adtArm${lock}${user}") ||
+                ((lock ? isLockKeypad : isAnyLockKeypad) && (settings."keypadArmDisarm${lock}${user}" != false))) { // If we have a seleted an ADT option
+                input "adtDevices", "capability.battery", title: "Select ADT panel${settings."adtArm${lock}${user}" ? "" : " (optional)"}", multiple: false, required: (settings."adtArm${lock}${user}" ? true : false) // Required if we select ADT
+            }
             if (lock ? isLockKeypad : isAnyLockKeypad) { // Show only if we have a supported keypad (for selected lock or for general settings)
-                input "keypadArmDisarm${lock}${user}", "bool", title: "Control SHM/ADT using keypad", required: false, submitOnChange: true
+                def hrefParams = [
+                    user: user,
+                    lock: lock as String,
+                    passed: true 
+                ]
+                href(name: "armAwayKeypadActions${lock}", params: hrefParams + [arm: "away"], title: "Away/On button actions", page: "armKeypadActionsPage", description: "", required: false, image: "")
+                href(name: "armStayKeypadActions${lock}", params: hrefParams + [arm: "stay"], title: "Stay/Partial button actions", page: "armKeypadActionsPage", description: "", required: false, image: "")
+                href(name: "armNightKeypadActions${lock}", params: hrefParams + [arm: "night"], title: "Night button actions", page: "armKeypadActionsPage", description: "", required: false, image: "")
             }
-            if (((lock ? (isLockKeypad ? !settings."keypadArmDisarm${lock}${user}" : true) : true) && settings."adtArm${lock}${user}") ||
-                ((lock ? isLockKeypad : isAnyLockKeypad) && settings."keypadArmDisarm${lock}${user}")) { // If we have a seleted an ADT option
-                input "adtDevices", "capability.battery", title: "Select ADT panel(s)", multiple: true, required: (settings."adtArm${lock}${user}" ? true : false) // Required if we select ADT
-            }
+            input "externalLockPhrase${lock}${user}", "enum", title: "Run routine", required: false, options: phrases, defaultValue: priorLockPhrase
+            input "externalLockMode${lock}${user}", "mode", title: "Change mode to", required: false, multiple: false, defaultValue: priorHomeMode
             input "externalLockTurnOnSwitches${lock}${user}", "capability.switch", title: "Turn on switch(s)", required: false, multiple: true
             input "externalLockTurnOffSwitches${lock}${user}", "capability.switch", title: "Turn off switch(s)", required: false, multiple: true
             input "lockLocks${lock}${user}","capability.lock", title: "Lock lock(s)", required: false, multiple: true
             input "closeGarage${lock}${user}","capability.garageDoorControl", title: "Close garage door(s)", required: false, multiple: true
 
-            input "delayLockActions${lock}${user}", "bool", title: "Delay running lock actions", required: false, submitOnChange: true
-            if (settings."delayLockActions${lock}${user}") {
-                input "delayLockActionsTime${lock}${user}", "number", title: "...by (minutes)", defaultValue: settings."delayLockActionsTime${lock}${user}", required: true, range: "1..*"
-            }
+            input "delayLockActionsTime${lock}${user}", "number", title: "Delay running actions (minutes)", required: false, range: "0..*"
 
             paragraph title: "Do NOT run the above lock actions for door${lock ? " $lock" : ""} under any of the following conditions", required: true, ""
             input "runXPeopleLockActions${lock}${user}", "capability.presenceSensor", title: "...when any these people are present", required: false, multiple: true
@@ -682,22 +781,19 @@ def lockManualActionsPage(params) {
             def priorLockPhrase = settings."externalLockPhraseManual${lock}"
             def priorHomeMode = settings."externalLockModeManual${lock}"
 
-            input "externalLockPhraseManual${lock}", "enum", title: "Run routine", required: false, options: phrases, defaultValue: priorLockPhrase
-            input "externalLockModeManual${lock}", "mode", title: "Change mode to", required: false, multiple: false, defaultValue: priorHomeMode
             input "homeArmManual${lock}", "bool", title: "Arm Smart Home Monitor to Stay", required: false
             input "adtArmManual${lock}", "bool", title: "Arm ADT to Stay", required: false, submitOnChange: true
             if (settings."adtArmManual${lock}") { // If we have a seleted an ADT option
-                input "adtDevices", "capability.battery", title: "Select ADT panel(s)", multiple: true, required: true // Required if we select ADT
+                input "adtDevices", "capability.battery", title: "Select ADT panel", multiple: false, required: true // Required if we select ADT
             }
+            input "externalLockPhraseManual${lock}", "enum", title: "Run routine", required: false, options: phrases, defaultValue: priorLockPhrase
+            input "externalLockModeManual${lock}", "mode", title: "Change mode to", required: false, multiple: false, defaultValue: priorHomeMode
             input "externalLockTurnOnSwitchesManual${lock}", "capability.switch", title: "Turn on switch(s)", required: false, multiple: true
             input "externalLockTurnOffSwitchesManual${lock}", "capability.switch", title: "Turn off switch(s)", required: false, multiple: true
             input "lockLocksManual${lock}","capability.lock", title: "Lock lock(s)", required: false, multiple: true
             input "closeGarageManual${lock}","capability.garageDoorControl", title: "Close garage door(s)", required: false, multiple: true
 
-            input "delayLockActionsManual${lock}", "bool", title: "Delay running lock actions", required: false, submitOnChange: true
-            if (settings."delayLockActionsManual${lock}") {
-                input "delayLockActionsTimeManual${lock}", "number", title: "...by (minutes)", defaultValue: settings."delayLockActionsTimeManual${lock}", required: true, range: "1..*"
-            }
+            input "delayLockActionsTimeManual${lock}", "number", title: "Delay running actions (minutes)", required: false, range: "0..*"
 
             paragraph title: "Do NOT run the above lock actions for door${lock ? " $lock" : ""} under any of the following conditions", required: true, ""
             input "runXPeopleLockActionsManual${lock}", "capability.presenceSensor", title: "...when any these people are present", required: false, multiple: true
@@ -716,7 +812,7 @@ def usersPage() {
     dynamicPage(name:"usersPage", title: "User Names, Codes and Notification Setup", uninstall: false, install: false) {
 
         if (!maxUserNames) {
-            section("Invalid number of users") {
+            section("No users to configure") {
                 paragraph title: "First configure the number of users on the previous page", required: true, ""
             }
         }
@@ -724,10 +820,11 @@ def usersPage() {
         TimeZone timeZone = location.timeZone
         if (!timeZone) {
             timeZone = TimeZone.getDefault()
-            log.error "Hub location/timezone not set, using ${timeZone.getDisplayName()} timezone. Please set Hub location and timezone for the codes to work accurately"
-            sendPush "Hub location/timezone not set, using ${timeZone.getDisplayName()} timezone. Please set Hub location and timezone for the codes to work accurately"
+            def msg = "Hub geolocation not set, using ${timeZone.getDisplayName()} timezone. Use the SmartThings app to set the Hub geolocation to identify the correct timezone."
+            log.error msg
+            sendPush msg
             section("INVALID HUB LOCATION") {
-                paragraph title: "Hub location/timezone not set, using ${timeZone.getDisplayName()} timezone. Please set Hub location and timezone for the codes to work accurately", required: true, ""
+                paragraph title: msg, required: true, ""
             }
         }
 
@@ -735,8 +832,6 @@ def usersPage() {
             for (int i = 1; i <= maxUserNames; i++) {
                 def priorName = settings."userNames${i}"
                 def priorCode = settings."userCodes${i}"
-                def priorNotify = settings."userNotify${i}"
-                def priorNotifyModes = settings."userNotifyModes${i}"
                 def priorExpireDate = settings."userExpireDate${i}"
                 def priorExpireTime = settings."userExpireTime${i}"
                 def priorStartDate = settings."userStartDate${i}"
@@ -752,7 +847,7 @@ def usersPage() {
                 def userSlotActive = true
                 def pendingUpdate = false
                 def failedUpdate = false
-                //log.trace "Initial $i Name: $priorName, Code: $priorCode, Notify: $priorNotify, NotifyModes: $priorNotifyModes, ExpireDate: $priorExpireDate, ExpireTime: $priorExpireTime, StartDate: $priorStartDate, StartTime: $priorStartTime, UserType: $priorUserType"
+                //log.trace "Initial $i Name: $priorName, Code: $priorCode, ExpireDate: $priorExpireDate, ExpireTime: $priorExpireTime, StartDate: $priorStartDate, StartTime: $priorStartTime, UserType: $priorUserType"
 
                 // Check for errors and display messages
                 if (priorCode) { // Do all the checks only if user has been configured
@@ -924,6 +1019,12 @@ def usersPage() {
                             pendingUpdate = true
                             break
                         }
+                    } else if ((state.retryCodeCount != null) && (state.retryCodeCount[lock.id]?.(i as String) > (maxRetries + 1))) { // Failed to update from lock not selected
+                        failedUpdate = true
+                        break
+                    } else if (userSlotActive && (state.lockCodes != null) && state.lockCodes[lock.id]?.(i as String)) { // Deletion pending update from a lock not selected
+                        pendingUpdate = true
+                        break
                     }
                 }
 
@@ -965,10 +1066,11 @@ def userConfigPage(params) {
         TimeZone timeZone = location.timeZone
         if (!timeZone) {
             timeZone = TimeZone.getDefault()
-            log.error "Hub location/timezone not set, using ${timeZone.getDisplayName()} timezone. Please set Hub location and timezone for the codes to work accurately"
-            sendPush "Hub location/timezone not set, using ${timeZone.getDisplayName()} timezone. Please set Hub location and timezone for the codes to work accurately"
+            def msg = "Hub geolocation not set, using ${timeZone.getDisplayName()} timezone. Use the SmartThings app to set the Hub geolocation to identify the correct timezone."
+            log.error msg
+            sendPush msg
             section("INVALID HUB LOCATION") {
-                paragraph title: "Hub location/timezone not set, using ${timeZone.getDisplayName()} timezone. Please set Hub location and timezone for the codes to work accurately", required: true, ""
+                paragraph title: msg, required: true, ""
             }
         }
 
@@ -1154,11 +1256,17 @@ def userConfigPage(params) {
                         def msg = "Pending deletion confirmation from $lock"
                         paragraph msg
                     }
+                } else if ((state.retryCodeCount != null) && (state.retryCodeCount[lock.id]?.(i as String) > (maxRetries + 1))) { // Failed to update from lock not selected
+                    def msg = "No response from $lock"
+                    paragraph title: msg, required: true, ""
+                } else if (userSlotActive && (state.lockCodes != null) && state.lockCodes[lock.id]?.(i as String)) { // Deletion pending update from a lock not selected
+                    def msg = "Pending deletion confirmation from $lock"
+                    paragraph msg
                 }
             }
 
             // User and code details/types
-            input "userNames${i}", "text", description: "Tap to set", title: "Name", multiple: false, required: (settings."userCodes${i}" ? true : false), submitOnChange: false, image: "http://www.rboyapps.com/images/User.png"
+            input "userNames${i}", "text", description: "Tap to set", title: "Name", multiple: false, required: (settings."userCodes${i}" ? true : false), submitOnChange: false, image: "http://www.rboyapps.com/images/UserPage.png"
             input "userCodes${i}", "text", description: "Tap to set", title: "Code${pinLen ? " (${pinLen} digits)" : ((minPinLen && maxPinLen) ? " (${minPinLen}-${maxPinLen} digits)" : "")}", multiple: false, required: false, submitOnChange: true, image: "http://www.rboyapps.com/images/Code.png" // Input it type text otherwise users can't enter the number starting with 0
 
             // Lock selection
@@ -1175,15 +1283,15 @@ def userConfigPage(params) {
                     if (invalidStartDate == true) {
                         paragraph title: "INVALID START DATE - PLEASE CHECK YOUR DATE FORMAT", required: true, ""
                     }
-                    input "userStartDate${i}", "text", title: "...code start date (YYYY-MM-DD) (optional)", description: "Date on which the code should be enabled", required: false,  submitOnChange: true
+                    input "userStartDate${i}", "text", title: "...code start date (YYYY-MM-DD) (optional)", description: "date on which the code should be enabled", required: false,  submitOnChange: true
                     if (priorStartDate) {
-                        input "userStartTime${i}", "time", title: "...code start time", description: "The code would be enabled within 2 minutes of this time", required: true,  submitOnChange: false
+                        input "userStartTime${i}", "time", title: "...code start time", description: "the code would be enabled within 2 minutes of this time", required: true,  submitOnChange: false
                     }
                     if (invalidExpiryDate == true) {
                         paragraph title: "INVALID EXPIRY DATE - PLEASE CHECK YOUR DATE FORMAT", required: true, ""
                     }
-                    input "userExpireDate${i}", "text", title: "...code expiration date (YYYY-MM-DD)", description: "Date on which the code should be deleted", defaultValue: (new Date(now())).format("yyyy-MM-dd", timeZone), required: true, submitOnChange: true
-                    input "userExpireTime${i}", "time", title: "...code expiration time", description: "The code would be deleted within 2 minutes of this time", required: true, submitOnChange: false
+                    input "userExpireDate${i}", "text", title: "...code expiration date (YYYY-MM-DD)", description: "date on which the code should be deleted", defaultValue: (new Date(now())).format("yyyy-MM-dd", timeZone), required: true, submitOnChange: true
+                    input "userExpireTime${i}", "time", title: "...code expiration time", description: "the code would be deleted within 2 minutes of this time", required: true, submitOnChange: false
                     break
 
                 case 'Scheduled':
@@ -1199,12 +1307,12 @@ def userConfigPage(params) {
                     break
 
                 case 'Presence':
-                    input "userPresent${i}", "capability.presenceSensor", title: "...if any these people are present", description: "Code should be active when any of these people are present", required: false, multiple: true
+                    input "userPresent${i}", "capability.presenceSensor", title: "...if any these people are present", description: "code should be active when any of these people are present", required: false, multiple: true
                     input "userNotPresent${i}", "capability.presenceSensor", title: "...and none of these people are present", description: "when all these people are not present", required: false, multiple: true
                     break
 
                 case 'Modes':
-                    input "userModes${i}", "mode", title: "...when in this mode(s)", description: "Code should be active only during these modes", required: true, multiple: true
+                    input "userModes${i}", "mode", title: "...when in this mode(s)", description: "code should be active only during these modes", required: true, multiple: true
                     break
 
                 default:
@@ -1214,8 +1322,8 @@ def userConfigPage(params) {
             // Notifications for each user
             input "userNotify${i}", "bool", title: "Notify on use", defaultValue: true, required: false, submitOnChange: true, image: "http://www.rboyapps.com/images/Notifications.png"
             if (priorNotify != false) {
-                input "userNotifyUseCount${i}", "number", title: "...limit to only this many times", description: "No limit", required: false, range: "1..*"
-                input "userNotifyModes${i}", "mode", title: "...only when in this mode(s)", description: "Notify only when in any of these modes", required: false, multiple: true
+                input "userNotifyUseCount${i}", "number", title: "...limit to only this many times", description: "no limit", required: false, range: "1..*"
+                input "userNotifyModes${i}", "mode", title: "...only when in this mode(s)", description: "notify only when in any of these modes", required: false, multiple: true
                 input "userXNotifyPresence${i}", "capability.presenceSensor", title: "...and none of these people are present", description: "when all these people are not present", required: false, multiple: true
             }
 
@@ -1398,30 +1506,26 @@ def appTouch() {
     TimeZone timeZone = location.timeZone
     if (!timeZone) {
         timeZone = TimeZone.getDefault()
-        log.error "Hub location/timezone not set, using ${timeZone.getDisplayName()} timezone. Please set Hub location and timezone for the codes to work accurately"
-        sendPush "Hub location/timezone not set, using ${timeZone.getDisplayName()} timezone. Please set Hub location and timezone for the codes to work accurately"
+        def msg = "Hub geolocation not set, using ${timeZone.getDisplayName()} timezone. Use the SmartThings app to set the Hub geolocation to identify the correct timezone."
+        log.error msg
+        sendPush msg
     }
     def random = new Random()
     Integer randomHour = random.nextInt(18-10) + 10
-    Integer randomDayOfWeek = random.nextInt(7-1) + 1 // 1 to 7
     Calendar localCalendar = Calendar.getInstance(timeZone)
-    localCalendar.set(Calendar.DAY_OF_WEEK, randomDayOfWeek)
-    localCalendar.set(Calendar.HOUR_OF_DAY, randomHour) // Check for code updates once a week at a random day and time between 10am and 6pm
-    localCalendar.set(Calendar.MINUTE, 0)
+    localCalendar.set(Calendar.DAY_OF_WEEK, (new Date(now()))[Calendar.DAY_OF_WEEK]) // Starting today
+    localCalendar.set(Calendar.HOUR_OF_DAY, randomHour) // Check for code updates everyday at a random time between 10am and 6pm
+    localCalendar.set(Calendar.MINUTE, 3) // Offset to avoid ST platform timeout issue at top of hour
     localCalendar.set(Calendar.SECOND, 0)
     localCalendar.set(Calendar.MILLISECOND, 0)
-    if (localCalendar.getTimeInMillis() < now()) { // If it's in the past add one week to it
-        localCalendar.add(Calendar.DAY_OF_YEAR, 7)
+    if (localCalendar.getTimeInMillis() < now()) { // If it's in the past add one day to it
+        localCalendar.add(Calendar.DAY_OF_YEAR, 1)
     }
-    state.nextCodeUpdateCheck = localCalendar.getTimeInMillis()
+    state.nextCodeUpdateCheck = state.nextCodeUpdateCheck ?: localCalendar.getTimeInMillis() // If it's already set then don't update it
     log.debug "Checking for next app update after ${(new Date(state.nextCodeUpdateCheck)).format("EEE MMM dd yyyy HH:mm z", timeZone)}"
     
-    // subscribe to random events to kick start timers again due to buggy platform killing the timers after a while and presence/mode events to update code states
+    // subscribe to events to kick start timers and presence/mode events to update code states
     subscribe(location, "mode", changeHandler)
-    subscribe(location, "position", changeHandler)
-    subscribe(location, "sunset", changeHandler)
-    subscribe(location, "sunrise", changeHandler)
-    subscribe(location, "routineExecuted", changeHandler)
     subscribe(app, changeHandler) // Capture user intent to reinitialize timers
     def presence = []// subscribe to presence
     for (int i = 1; i <= maxUserNames; i++) {
@@ -1436,6 +1540,10 @@ def appTouch() {
     subscribe(locks, "tamper", lockHandler) // Subscribe to tamper events
     subscribe(locks, "codeReport", codeResponse, [filterEvents:false]) // Subscribe to code report events to see if the code update was successful
     subscribe(locks, "codeChanged", codeResponse, [filterEvents:false]) // Subscribe to code report events to see if the code update was successful
+    subscribe(location, "alarmSystemStatus" , shmChangeHandler) // Subscribe to SHM state handler
+    if (adtDevices) {
+        subscribe(adtDevices, "securitySystemStatus" , adtChangeHandler) // Subscribe to ADT state handler
+    }
 
     // Reset the code update trackers and heartbeat system
     state.lastCheck = 0
@@ -1447,7 +1555,7 @@ def appTouch() {
             subscribe(settings."sensor${lock}", "contact", sensorHandler)
         }
         if (lock.hasAttribute('invalidCode')) {
-            log.trace "Found attribute 'invalidCode' on lock $lock, enabled support for invalid code detection"
+            log.trace "Found attribute 'invalidCode' on $lock, enabled support for invalid code detection"
             subscribe(lock, "invalidCode", lockHandler)
         }
     }
@@ -1519,6 +1627,84 @@ def changeHandler(evt) {
     }
     
     kickStart()
+}
+
+// Handle changes to ADT states
+def adtChangeHandler(evt) {
+    log.trace "ADT state change notification, name: ${evt?.name}, value: ${evt?.value}"
+
+    def msg = ""
+    def keypads = locks?.findAll{ it.hasAttribute("armMode") } // Get all keypads and sync state with ADT
+    // We don't check for individual user custom actions for keypads since synchronization needs to happen at the keypad level
+    keypads = (settings."individualDoorActions${""}" ? keypads.findAll { keypad -> (settings."keypadArmDisarm${keypad}${""}" != false) } : (settings."keypadArmDisarm${""}${""}" != false ? keypads : null)) // Get keypads with direct control enabled
+    def mode = settings."adtDevices"?.currentState("securitySystemStatus")?.value // This should the new ADT state
+    if (keypads) {
+        switch (mode) {
+            case "armedAway":
+                msg = "Detected ADT mode change, setting $keypads to Armed Away"
+                keypads*.setArmedAway()
+                break	
+
+            case "armedStay":
+                msg = "Detected ADT mode change, setting $keypads to Armed Stay"
+                keypads*.setArmedStay()
+                break
+
+            case "disarmed":
+                msg = "Detected ADT mode change, setting $keypads to Disarmed"
+                keypads*.setDisarmed()
+                break
+
+            default:
+                log.error "Unknown ADT mode $mode"
+                break
+        }
+    } else {
+        log.trace "No keypads found under direct SHM/ADT control"
+    }
+    
+    if (keypads && msg) {
+        log.info msg
+    }
+}
+
+// Handle changes to SHM states
+def shmChangeHandler(evt) {
+    log.trace "SHM state change notification, name: ${evt?.name}, value: ${evt?.value}"
+
+    def msg = ""
+    def keypads = locks?.findAll{ it.hasAttribute("armMode") } // Get all keypads and sync state with SHM
+    // We don't check for individual user custom actions for keypads since synchronization needs to happen at the keypad level
+    keypads = (settings."individualDoorActions${""}" ? keypads.findAll { keypad -> (settings."keypadArmDisarm${keypad}${""}" != false) } : (settings."keypadArmDisarm${""}${""}" != false ? keypads : null)) // Get keypads with direct control enabled
+    def mode = location.currentState("alarmSystemStatus")?.value // This should the new SHM state
+    if (keypads) {
+        switch (mode) {
+            case "away":
+                msg = "Detected SHM mode change, setting $keypads to Armed Away"
+                keypads*.setArmedAway()
+                break	
+
+            case "stay":
+                msg = "Detected SHM mode change, setting $keypads to Armed Stay"
+                keypads*.setArmedStay()
+                break
+
+            case "off":
+                msg = "Detected SHM mode change, setting $keypads to Disarmed"
+                keypads*.setDisarmed()
+                break
+
+            default:
+                log.error "Unknown SHM mode $mode"
+                break
+        }
+    } else {
+        log.trace "No keypads found under direct SHM/ADT control"
+    }
+    
+    if (keypads && msg) {
+        log.info msg
+    }
 }
 
 def sensorHandler(evt) {
@@ -1687,6 +1873,16 @@ def notifyOpenDoor() {
     notifyOpenDoorsIds?.each { lockid, timestamp ->
         def lock = locks.find { it.id == lockid } // find the lock
         def lockSensor = settings."sensor${lock}" // Get the sensor for the lock
+        
+        if (!settings."openNotify${lock}" || (settings."openNotifyModes${lock}" && !(settings."openNotifyModes${lock}"?.find{it == location.mode}))) { // Check if the settings have changed
+            log.trace "No need to monitor open sensor ${lockSensor} for door ${lock} as settings/modes have changed"
+            //log.trace "Removing ${lockid} from the list of pending notifications"
+            def notifyOpenDoors = atomicState.notifyOpenDoors // We need to deference the atomicState object each time, https://community.smartthings.com/t/atomicstate-not-working/27827/6?u=rboy
+            notifyOpenDoors.remove(lock.id) // We are done with this lock, remove it from the list
+            atomicState.notifyOpenDoors = notifyOpenDoors // set it back to atomicState
+            return // move on
+        }
+        
         Long timeLeft = (((60 * 1000 * settings."openNotifyTimeout${lock}") + timestamp) - now())/1000 // timestamp and now() is in ms
         if (timeLeft <= 1) { // If we are within 1 second then go ahead since the timer isn't always 100% accurate
             if (lockSensor.latestValue("contact") == "closed") {
@@ -1858,7 +2054,7 @@ def lockHandler(evt) {
     
     log.trace "Lock event name $evt.name, value $evt.value, device $evt.displayName, description $evt.descriptionText, data $evt.data"
 
-    def evtMap = [name:evt.name, value:evt.value, displayName:evt.displayName, descriptionText:evt.descriptionText, data:evt.data, lockId: evt.device.id]
+    def evtMap = [name:evt.name, value:evt.value, displayName:evt.displayName, descriptionText:evt.descriptionText, data:evt.data, lockId: evt.device.id] // NOTE: Bug with ST, runIn passes a JSONObject instead of a map - https://community.smartthings.com/t/runin-json-vs-map/104442 so convert evt to a standard map and also we can't pass evt object to runIn
 
     if (evt.name == "lock") { // LOCK UNLOCK EVENTS
         if (evt.value == "unlocked") { // UNLOCKED
@@ -1877,11 +2073,11 @@ def lockHandler(evt) {
         }
     } else if (evt.name == "invalidCode") { // INVALID LOCK CODE EVENT
         log.debug "Lock $evt.displayName, invalid user code: ${evt.value}"
-        def msg = "Too many invalid user codes detected on lock $evt.displayName"
+        def msg = "Invalid user code detected on $evt.displayName"
         sendNotifications(msg)
     } else if (evt.name == "tamper" && evt.value == "detected") { // Tampering of the lock
         log.debug "Lock $evt.displayName tamper detected with description $evt.descriptionText"
-        def msg = "Tampering detected on lock $evt.displayName. ${evt.descriptionText ?: ""}"
+        def msg = "Tampering detected on $evt.displayName. ${evt.descriptionText ?: ""}"
         sendNotifications(msg)
     }
 }
@@ -1911,6 +2107,9 @@ def processUnlockEvent(evt) {
     if (evt.data) { // Was it unlocked using a code
         data = parseJson(evt.data)
     }
+    
+    def user = (data?.usedCode as String) ?: ((data?.codeId as String) ?: "") // get the user if present
+    def i = (data?.usedCode as Integer) ?: ((data?.codeId as Integer) ?: 0) // get the user if present
     def lockMode = data?.type ?: (data?.method ?: (evt.descriptionText?.contains("manually") ? "manually" : "electronically"))
     // Fix for proper grammar
     switch (lockMode) {
@@ -1943,7 +2142,7 @@ def processUnlockEvent(evt) {
             break
     }
 
-    if ((data?.usedCode == null) && !(["keypad", "rfid"].any { lockMode?.toLowerCase().contains(it) })) { // No extended data, must be a manual/auto/keyed unlock, NOTE: some locks don't send keypad user codes
+    if (!user && !(["keypad", "rfid"].any { lockMode?.toLowerCase().contains(it) })) { // No extended data, must be a manual/auto/keyed unlock, NOTE: some locks don't send keypad user codes
         log.trace "$evt.displayName was unlocked manually. Source type: $lockMode"
 
         // Check if we have individual actions for each lock
@@ -1990,7 +2189,7 @@ def processUnlockEvent(evt) {
             }
 
             if (settings."homePhraseManual${lockStr}") {
-                log.info "Running unlock Phrase ${settings."homePhraseManual${lockStr}"}"
+                log.info "$evt.displayName was unlocked successfully, running routine ${settings."homePhraseManual${lockStr}"}"
                 location.helloHome.execute(settings."homePhraseManual${lockStr}") // First do this to avoid false alerts from a slow platform
                 msg += detailedNotifications ? ", running routine ${settings."homePhraseManual${lockStr}"}" : ""
             }
@@ -2035,7 +2234,6 @@ def processUnlockEvent(evt) {
             }
         }
     } else { // KEYPAD / RFID UNLOCK
-        Integer i = data.usedCode as Integer
         def name = settings."userNames${i}"
         def notify = settings."userNotify${i}"
         def notifyCount = settings."userNotifyUseCount${i}"
@@ -2049,6 +2247,7 @@ def processUnlockEvent(evt) {
         if (i == 0) {
             name = "Master Code" // Special case locks like Yale have a master code which isn't programmable and is code 0
             notify = true // always inform about master users
+            user = "" // Master code uses general actions
         }
 
         if (!name) { // will handle usedCode null errors
@@ -2059,10 +2258,9 @@ def processUnlockEvent(evt) {
         }
 
         // Check if we have user override unlock actions defined
-        def user = ""
-        if (settings."userOverrideUnlockActions${i as String}") {
-            log.trace "Found per user unlock actions"
-            user = i as String
+        if (!settings."userOverrideUnlockActions${i as String}") {
+            log.trace "Did not find per user unlock actions, falling back to general actions"
+            user = ""
         }
 
         // Check if we have individual actions for each lock
@@ -2080,7 +2278,7 @@ def processUnlockEvent(evt) {
             log.trace "Current mode is ${location.mode}, not running unlock actions for door $lock"
         } else {
             // If we have a specific mode passed by the keypad lets use that otherwise use configured options
-            if (settings."keypadArmDisarm${lockStr}${user}" && (data instanceof org.codehaus.groovy.grails.web.json.JSONObject ? !data?.isNull("armMode") : (data?.armMode != null))) { // NOTE: Bug with ST, runIn passes a JSONObject instead of a map - https://community.smartthings.com/t/runin-json-vs-map/104442
+            if ((settings."keypadArmDisarm${lockStr}${user}" != false) && data?.armMode) {
                 switch (data.armMode) { // Set Keypad lock state
                     case "disarmed":
                     	log.info "Disarming Smart Home Monitor"
@@ -2091,12 +2289,14 @@ def processUnlockEvent(evt) {
                                 log.info "Disarming ADT"
                                 settings."adtDevices"?.disarm() // First do this to avoid false alerts from a slow platform
                                 msg += detailedNotifications ? ", disarming ADT" : ""
+                                startTimer(1, adtChangeHandler) // If this came from a keypad and direct control for ADT is enabled, then refresh the keypad state (incase exit code beeping needs to be cancelled)
+                            } else {
+                                startTimer(1, shmChangeHandler) // If this came from a keypad and direct control for SHM is enabled, then refresh the keypad state (incase exit code beeping needs to be cancelled)
                             }
                         } catch (e) { // This is still not official so lets be cautious about it
                             log.error "Error disarming ADT\n$e"
                             msg += ", error disarming ADT"
                         }
-                        lock.setDisarmed()
                     	break
                         
                     default:
@@ -2134,7 +2334,7 @@ def processUnlockEvent(evt) {
             }
 
             if (settings."homePhrase${lockStr}${user}") {
-                log.info "Running unlock Phrase ${settings."homePhrase${lockStr}${user}"}"
+                log.info "$evt.displayName was unlocked successfully, running routine ${settings."homePhrase${lockStr}${user}"}"
                 location.helloHome.execute(settings."homePhrase${lockStr}${user}") // First do this to avoid false alerts from a slow platform
                 msg += detailedNotifications ? ", running routine ${settings."homePhrase${lockStr}${user}"}" : ""
             }
@@ -2251,8 +2451,8 @@ def processLockEvent(evt) {
 
     evt.lockMode = lockMode // Save the lockMode calculated
     evt.data = data // Update the data to be passed
-    user = (data?.usedCode as String) ?: "" // get the user if present
-    i = (data?.usedCode as Integer) ?: 0 // get the user if present
+    user = (data?.usedCode as String) ?: ((data?.codeId as String) ?: "") // get the user if present
+    i = (data?.usedCode as Integer) ?: ((data?.codeId as Integer) ?: 0) // get the user if present
     log.trace "$lock locked by user $user $lockMode"
 
     // Check if we have user override unlock actions defined
@@ -2268,19 +2468,65 @@ def processLockEvent(evt) {
         lockStr = ""
     }
 
-    if ((["keypad", "rfid"].any { lockMode?.toLowerCase().contains(it) }) || (data?.usedCode != null)) { // LOCKED VIA KEYPAD/RFID
+    if ((["keypad", "rfid"].any { lockMode?.toLowerCase().contains(it) }) || user) { // LOCKED VIA KEYPAD/RFID
         // Check if we have a delayed action and process accordingly
-        if (settings."delayLockActions${lockStr}${user}") {
-            log.debug "Delaying keypad lock actions by ${settings."delayLockActionsTime${lockStr}${user}"} minutes"
+        if (settings."delayLockActionsTime${lockStr}${user}") {
+            def name, notify, notifyCount, notifyModes, notifyXPresence, extLockNotify, extLockNotifyModes
+            if (user) {
+                if (i == 0) {
+                    name = "Master Code" // Special case locks like Yale have a master code which isn't programmable and is code 0
+                    notify = true // always inform about master users
+                    user = "" // Master code uses general actions
+                } else {
+                    name = settings."userNames${i}" ?: "Unknown user" // Should have a name for the user otherwise it's unknown
+                    notify = settings."userNotify${i}"
+                    notifyCount = settings."userNotifyUseCount${i}"
+                    notifyModes = settings."userNotifyModes${i}"
+                    notifyXPresence = settings."userXNotifyPresence${i}"
+                }
+            } else {
+                log.trace "No usercode found in extended data for external user lock"
+            }
+
+            extLockNotify = settings."externalLockNotify${lockStr}"
+            extLockNotifyModes = settings."externalLockNotifyModes${lockStr}"
+
+            def msg = "$evt.displayName was locked ${name ? "by " + name + " " : ""}$lockMode, checking for actions in ${settings."delayLockActionsTime${lockStr}${user}"} minutes" // Default message to send
+            log.debug msg
+            if ((notify && (
+                    (notifyModes ? notifyModes?.find{it == location.mode} : true) &&
+                    (notifyXPresence ? notifyXPresence.every{it.currentPresence != "present"} : true)
+                ) && (
+                    !i || (notifyCount ? (state.codeUseCount[lock.id][i as String] <= notifyCount) : true)
+            )) ||
+                (!i && extLockNotify && (extLockNotifyModes ? extLockNotifyModes.find{it == location.mode} : true))) {
+                msgs << msg
+            }
             evt.sendNotifications = true // Since it's delayed we request notifications be sent
+            // If this came from a keypad and direct control for SHM is enabled, then start an exit code beep for all keypads with direct control
+            if (data?.armMode) {
+                if (settings."keypadArmDisarm${lock}${""}" != false) { // If this keypad has direct control enabled
+                    def keypads = locks?.findAll{ it.hasAttribute("armMode") } // Get all keypads and sync state with SHM
+                    // We don't check for individual user custom actions for keypads since synchronization needs to happen at the keypad level
+                    keypads = (settings."individualDoorActions${""}" ? keypads.findAll { keypad -> (settings."keypadArmDisarm${keypad}${""}" != false) } : (settings."keypadArmDisarm${""}${""}" != false ? keypads : null)) // Get keypads with direct control enabled
+                    if (keypads) {
+                        log.trace "Direct SHM controls enabled, starting exit delay beeping for $keypads"
+                        keypads*.setExitDelay(settings."delayLockActionsTime${lockStr}${user}" * 60) // Start exit delay beeping for delayed actions with direct control enabled
+                    }
+                }
+            }
             startTimer(settings."delayLockActionsTime${lockStr}${user}" * 60, processLockActions, evt)
         } else {
             msgs += processLockActions(evt) // Take the message back to send out
         }
     } else { // MANUAL LOCK
         // Check if we have a delayed action and process accordingly
-        if (settings."delayLockActionsManual${lockStr}") {
-            log.debug "Delaying manual lock actions by ${settings."delayLockActionsTimeManual${lockStr}"} minutes"
+        if (settings."delayLockActionsTimeManual${lockStr}") {
+            def msg = "$evt.displayName was locked $lockMode, checking for actions in ${settings."delayLockActionsTimeManual${lockStr}"} minutes" // Default message to send
+            log.debug msg
+            if (settings."lockNotify${lockStr}" && (!(["keypad", "rfid"].any { lockMode?.toLowerCase().contains(it) })) && (settings."lockNotifyModes${lockStr}" ? settings."lockNotifyModes${lockStr}".find{it == location.mode} : true)) {
+                msgs << msg
+            }
             evt.sendNotifications = true // Since it's delayed we request notifications be sent
             startTimer(settings."delayLockActionsTimeManual${lockStr}" * 60, processLockActions, evt)
         } else {
@@ -2322,22 +2568,21 @@ def processLockActions(evt) {
     def lock = locks.find { it.id == evt.lockId }
     def msgs = [] // Message to send
     def lockMode = evt.lockMode
-    def user = ""
-    def i = 0
+    def arm = "" // Security keypad arm mode (optional)
+    def user = (data?.usedCode as String) ?: ((data?.codeId as String) ?: "") // get the user if present
+    def i = (data?.usedCode as Integer) ?: ((data?.codeId as Integer) ?: 0) // get the user if present
 
     log.trace "Processing $lock lock actions: $evt"
 
-    if ((["keypad", "rfid"].any { lockMode?.toLowerCase().contains(it) }) || (data?.usedCode != null)) { // LOCKED VIA KEYPAD/RFID
+    if ((["keypad", "rfid"].any { lockMode?.toLowerCase().contains(it) }) || user) { // LOCKED VIA KEYPAD/RFID
         def name, notify, notifyCount, notifyModes, notifyXPresence, extLockNotify, extLockNotifyModes, userOverrideActions
 
-        if ((data instanceof org.codehaus.groovy.grails.web.json.JSONObject ? !data?.isNull("usedCode") : (data?.usedCode != null)) && (data?.usedCode >= 0)) { // NOTE: Bug with ST, runIn passes a JSONObject instead of a map - https://community.smartthings.com/t/runin-json-vs-map/104442
-            i = data.usedCode as Integer
-
+        if (user) {
             if (i == 0) {
                 name = "Master Code" // Special case locks like Yale have a master code which isn't programmable and is code 0
                 notify = true // always inform about master users
+                user = "" // Master code uses general actions
             } else {
-                user = i as String
                 name = settings."userNames${i}" ?: "Unknown user" // Should have a name for the user otherwise it's unknown
                 notify = settings."userNotify${i}"
                 notifyCount = settings."userNotifyUseCount${i}"
@@ -2347,8 +2592,8 @@ def processLockActions(evt) {
 
                 // Check if we have user override lock actions defined
                 if (!userOverrideActions) {
-                    log.trace "No user $name specific lock action found, falling back to global actions"
-                    user = "" // We don't have a user specific action defined, fall back to global actions
+                    log.trace "No user $name specific lock action found, falling back to general actions"
+                    user = "" // We don't have a user specific action defined, fall back to general actions
                 }
             }
         } else {
@@ -2368,7 +2613,7 @@ def processLockActions(evt) {
 
         log.trace "Lock $evt.displayName locked by $name, user notify $notify, notify count: $notifyCount, user notify modes $notifyModes, notify NOT present $notifyXPresence, external notify $extLockNotify, external notify modes $extLockNotifyModes, user override action $userOverrideActions, Source type: $lockMode"
 
-        def msg = "$evt.displayName was locked ${name ? "by " + name + " " : ""}$lockMode" // Default message to send
+        def msg = evt.sendNotifications ? "Completing check for lock actions for $evt.displayName" : "$evt.displayName was locked ${name ? "by " + name + " " : ""}$lockMode" // Default message to send
 
         if (settings."runXPeopleLockActions${lockStr}${user}"?.find{it.currentPresence == "present"}) {
             log.trace "${settings."runXPeopleLockActions${lockStr}${user}"?.find{it.currentPresence == "present"}} is present, not running lock actions for door $lock"
@@ -2376,7 +2621,37 @@ def processLockActions(evt) {
             log.trace "Current mode is ${location.mode}, not running lock actions for door $lock"
         } else {
             // If we have a specific mode passed by the keypad lets use that otherwise use configured options
-            if (settings."keypadArmDisarm${lockStr}${user}" && (data instanceof org.codehaus.groovy.grails.web.json.JSONObject ? !data?.isNull("armMode") : (data?.armMode != null))) { // NOTE: Bug with ST, runIn passes a JSONObject instead of a map - https://community.smartthings.com/t/runin-json-vs-map/104442
+            if (data?.armMode) {
+                switch (data.armMode) { // Check for custom keypad arm actions
+                    case "armedStay":
+                    	if (settings."keypadArmActions${lockStr}${user}${"stay"}") {
+                            log.debug "Running custom actions for keypad stay/partial button"
+                            arm = "stay"
+                        }
+                        break
+                        
+                    case "armedNight":
+                    	if (settings."keypadArmActions${lockStr}${user}${"night"}") {
+                            log.debug "Running custom actions for keypad night button"
+                            arm = "night"
+                        }
+                        break
+                        
+                    case "armedAway":
+                    	if (settings."keypadArmActions${lockStr}${user}${"away"}") {
+                            log.debug "Running custom actions for keypad away/on button"
+                            arm = "away"
+                        }
+                        break
+                        
+                    default:
+                        log.warn "Invalid keypad Arm mode detected: ${data.armMode}"
+                    	msg += ", invalid keypad Arm mode ${data.armMode}"
+                        break                        
+                }
+            }
+
+            if ((settings."keypadArmDisarm${lockStr}${user}" != false) && data?.armMode) {
                 switch (data.armMode) { // Set Keypad lock state
                     case "armedStay":
                     case "armedNight":
@@ -2393,7 +2668,6 @@ def processLockActions(evt) {
                             log.error "Error arming ADT to Stay\n$e"
                             msg += ", error arming ADT to Stay"
                         }
-                        lock.setArmedStay()
                     	break
                     
                     case "armedAway":
@@ -2410,7 +2684,6 @@ def processLockActions(evt) {
                             log.error "Error arming ADT to Away\n$e"
                             msg += ", error arming ADT to Away"
                         }
-                        lock.setArmedAway()
                     	break
                         
                     default:
@@ -2449,46 +2722,46 @@ def processLockActions(evt) {
                 }
             }
 
-            if (settings."externalLockMode${lockStr}${user}") {
-                log.info "Changing mode to ${settings."externalLockMode${lockStr}${user}"}"
-                if (location.modes?.find{it.name == settings."externalLockMode${lockStr}${user}"}) {
-                    setLocationMode(settings."externalLockMode${lockStr}${user}") // First do this to avoid false alerts from a slow platform
+            if (settings."externalLockMode${lockStr}${user}${arm}") {
+                log.info "Changing mode to ${settings."externalLockMode${lockStr}${user}${arm}"}"
+                if (location.modes?.find{it.name == settings."externalLockMode${lockStr}${user}${arm}"}) {
+                    setLocationMode(settings."externalLockMode${lockStr}${user}${arm}") // First do this to avoid false alerts from a slow platform
                 }  else {
-                    log.warn "Tried to change to undefined mode '${settings."externalLockMode${lockStr}${user}"}'"
+                    log.warn "Tried to change to undefined mode '${settings."externalLockMode${lockStr}${user}${arm}"}'"
                 }
-                msg += detailedNotifications ? ", changing mode to ${settings."externalLockMode${lockStr}${user}"}" : ""
+                msg += detailedNotifications ? ", changing mode to ${settings."externalLockMode${lockStr}${user}${arm}"}" : ""
             }
 
-            if (settings."externalLockPhrase${lockStr}${user}") {
-                log.info "Running $lock specific locked Phrase ${settings."externalLockPhrase${lockStr}${user}"} for ${name ?: "external lock"}"
-                location.helloHome.execute(settings."externalLockPhrase${lockStr}${user}")
-                msg += detailedNotifications ? ", running ${settings."externalLockPhrase${lockStr}${user}"}" : ""
+            if (settings."externalLockPhrase${lockStr}${user}${arm}") {
+                log.info "$evt.displayName was locked successfully, running routine ${settings."externalLockPhrase${lockStr}${user}${arm}"}"
+                location.helloHome.execute(settings."externalLockPhrase${lockStr}${user}${arm}")
+                msg += detailedNotifications ? ", running ${settings."externalLockPhrase${lockStr}${user}${arm}"}" : ""
             } else {
                 log.trace "No individual routine configured to run when locked $lockMode for $lock"
             }
 
-            if (settings."externalLockTurnOnSwitches${lockStr}${user}") {
-                log.info "$evt.displayName was locked successfully, turning on switches ${settings."externalLockTurnOnSwitches${lockStr}${user}"}"
-                settings."externalLockTurnOnSwitches${lockStr}${user}"?.on()
-                msg += detailedNotifications ? ", turning on switches ${settings."externalLockTurnOnSwitches${lockStr}${user}"}" : ""
+            if (settings."externalLockTurnOnSwitches${lockStr}${user}${arm}") {
+                log.info "$evt.displayName was locked successfully, turning on switches ${settings."externalLockTurnOnSwitches${lockStr}${user}${arm}"}"
+                settings."externalLockTurnOnSwitches${lockStr}${user}${arm}"?.on()
+                msg += detailedNotifications ? ", turning on switches ${settings."externalLockTurnOnSwitches${lockStr}${user}${arm}"}" : ""
             }
 
-            if (settings."externalLockTurnOffSwitches${lockStr}${user}") {
-                log.info "$evt.displayName was locked successfully, turning off switches ${settings."externalLockTurnOffSwitches${lockStr}${user}"}"
-                settings."externalLockTurnOffSwitches${lockStr}${user}"?.off()
-                msg += detailedNotifications ? ", turning off switches ${settings."externalLockTurnOffSwitches${lockStr}${user}"}" : ""
+            if (settings."externalLockTurnOffSwitches${lockStr}${user}${arm}") {
+                log.info "$evt.displayName was locked successfully, turning off switches ${settings."externalLockTurnOffSwitches${lockStr}${user}${arm}"}"
+                settings."externalLockTurnOffSwitches${lockStr}${user}${arm}"?.off()
+                msg += detailedNotifications ? ", turning off switches ${settings."externalLockTurnOffSwitches${lockStr}${user}${arm}"}" : ""
             }
             
-            if (settings."lockLocks${lockStr}${user}") {
-                log.info "$evt.displayName was locked successfully, locking ${settings."lockLocks${lockStr}${user}"}"
-                settings."lockLocks${lockStr}${user}"?.lock()
-                msg += detailedNotifications ? ", locking ${settings."lockLocks${lockStr}${user}"}" : ""
+            if (settings."lockLocks${lockStr}${user}${arm}") {
+                log.info "$evt.displayName was locked successfully, locking ${settings."lockLocks${lockStr}${user}${arm}"}"
+                settings."lockLocks${lockStr}${user}${arm}"?.lock()
+                msg += detailedNotifications ? ", locking ${settings."lockLocks${lockStr}${user}${arm}"}" : ""
             }
 
-            if (settings."closeGarage${lockStr}${user}") {
-                log.info "$evt.displayName was locked successfully, closing garage ${settings."closeGarage${lockStr}${user}"}"
-                settings."closeGarage${lockStr}${user}"?.close()
-                msg += detailedNotifications ? ", closing garage ${settings."closeGarage${lockStr}${user}"}" : ""
+            if (settings."closeGarage${lockStr}${user}${arm}") {
+                log.info "$evt.displayName was locked successfully, closing garage ${settings."closeGarage${lockStr}${user}${arm}"}"
+                settings."closeGarage${lockStr}${user}${arm}"?.close()
+                msg += detailedNotifications ? ", closing garage ${settings."closeGarage${lockStr}${user}${arm}"}" : ""
             }
         }
 
@@ -2516,7 +2789,7 @@ def processLockActions(evt) {
             lockStr = ""
         }
 
-        def msg = "$evt.displayName was locked $lockMode" // Default message to send
+        def msg = evt.sendNotifications ? "Completing check for lock actions for $evt.displayName" : "$evt.displayName was locked $lockMode" // Default message to send
 
         if (settings."runXPeopleLockActionsManual${lockStr}"?.find{it.currentPresence == "present"}) {
             log.trace "${settings."runXPeopleLockActionsManual${lockStr}"?.find{it.currentPresence == "present"}} is present, not running lock actions for door $lock"
@@ -2551,7 +2824,7 @@ def processLockActions(evt) {
             }
 
             if (settings."externalLockPhraseManual${lockStr}") {
-                log.info "Running $lock specific locked Phrase ${settings."externalLockPhraseManual${lockStr}"} for ${name ?: "external lock"}"
+                log.info "$evt.displayName was locked successfully, running routine ${settings."externalLockPhraseManual${lockStr}"}"
                 location.helloHome.execute(settings."externalLockPhraseManual${lockStr}")
                 msg += detailedNotifications ? ", running ${settings."externalLockPhraseManual${lockStr}"}" : ""
             } else {
@@ -2675,8 +2948,9 @@ def codeCheck() {
     TimeZone timeZone = location.timeZone
     if (!timeZone) {
         timeZone = TimeZone.getDefault()
-        log.error "Hub location/timezone not set, using ${timeZone.getDisplayName()} timezone. Please set Hub location and timezone for the codes to work accurately"
-        sendPush "Hub location/timezone not set, using ${timeZone.getDisplayName()} timezone. Please set Hub location and timezone for the codes to work accurately"
+        def msg = "Hub geolocation not set, using ${timeZone.getDisplayName()} timezone. Use the SmartThings app to set the Hub geolocation to identify the correct timezone."
+        log.error msg
+        sendPush msg
     }
 
     log.trace "The date/time on the hub now is ${(new Date(now())).format("EEE MMM dd yyyy HH:mm z", timeZone)}"
@@ -2692,6 +2966,13 @@ def codeCheck() {
     state.lastCheck = now()
 
     for (lock in locks) {
+    	if ((state.lockCodes == null) || (state.lockCodes[lock.id] == null) || (state.retryCodeCount[lock.id] == null)) { // If we have a situation where the user added a new lock without tapping save reinitialize the app
+            def msg = "${app.label} detected an unsaved configuration change. Reinitializing the app, please open the app and click on Save to re-validate your settings"
+            log.warn msg
+            startTimer(1, appTouch) // Reinitialize the app offline to avoid a loop as appTouch calls codeCheck
+            return // We're done here
+        }
+        
         if (state.expiredLockList.contains(lock.id)) { // this lock codes hasn't been completely initiated
             //log.trace "If you're seeing this every few minutes, then ST is alive and kicking - ST cloud codes status for $lock"
             while (state.expiredNextCode <= maxUserNames) { // cycle through all the codes
@@ -3321,7 +3602,7 @@ private deleteCode(lock, user) {
 // Update the name on the lock for a user on a lock
 private updateCodeName(lock, user, name) {
     if (!(lock.hasAttribute("pinLength") || lock.hasCommand("deleteAllCodes"))) { // Older devices don't have this option
-        log.info "Updating user $user name to $name on lock $lock"
+        log.info "Updating user $user name to $name on $lock"
         lock.nameSlot(user, name)
     }
 }
@@ -3351,16 +3632,17 @@ def heartBeatMonitor() {
         kickStart()
     }
 
-    // We check for a code update once a week
+    // We check for a code update everyday
     TimeZone timeZone = location.timeZone
     if (!timeZone) {
         timeZone = TimeZone.getDefault()
-        log.error "Hub location/timezone not set, using ${timeZone.getDisplayName()} timezone. Please set Hub location and timezone for the codes to work accurately"
-        sendPush "Hub location/timezone not set, using ${timeZone.getDisplayName()} timezone. Please set Hub location and timezone for the codes to work accurately"
+        def msg = "Hub geolocation not set, using ${timeZone.getDisplayName()} timezone. Use the SmartThings app to set the Hub geolocation to identify the correct timezone."
+        log.error msg
+        sendPush msg
     }
     if (now() >= state.nextCodeUpdateCheck) {
         // Before checking for code update, calculate the next time we want to check
-        state.nextCodeUpdateCheck = (state.nextCodeUpdateCheck ?: now()) + (7*24*60*60*1000) // 1 week from now
+        state.nextCodeUpdateCheck = (state.nextCodeUpdateCheck ?: now()) + (1*24*60*60*1000) // 1 day from now
         log.info "Checking for next app update after ${(new Date(state.nextCodeUpdateCheck)).format("EEE MMM dd yyyy HH:mm z", timeZone)}"
         
         checkForCodeUpdate() // Check for code updates
@@ -3370,7 +3652,7 @@ def heartBeatMonitor() {
 }
 
 def startTimer(seconds, function, dataMap = null) {
-    log.trace "Scheduled to run $function in $seconds seconds"
+    log.trace "Scheduled to run $function in $seconds seconds${dataMap ? " with data $dataMap" : ""}"
 
     //def runTime = new Date(now() + ((Long)seconds * 1000)) // for runOnce
     //runOnce(runTime, function, [overwrite: true]) // runIn isn't reliable, runOnce is more reliable but isn't as accurate
@@ -3384,17 +3666,18 @@ def startTimer(seconds, function, dataMap = null) {
 // Checks if we are within the current operating scheduled
 // Inputs to the function are user (i) and schedule (x) (there can be multiple schedules)
 // Preferences required in user input settings are:
-// settings."userStartTime${x}${i}"
-// settings."userEndTime${x}${i}"
-// settings."userDayOfWeek${x}${i}"
+// settings."userStartTime${x}${i}" - optional
+// settings."userEndTime${x}${i}" - optional
+// settings."userDayOfWeek${x}${i}" - required
 private checkSchedule(def i, def x) {
     log.trace "Checking operating schedule $x for user $i"
 
     TimeZone timeZone = location.timeZone
     if (!timeZone) {
         timeZone = TimeZone.getDefault()
-        log.error "Hub location/timezone not set, using ${timeZone.getDisplayName()} timezone. Please set Hub location and timezone for the codes to work accurately"
-        sendPush "Hub location/timezone not set, using ${timeZone.getDisplayName()} timezone. Please set Hub location and timezone for the codes to work accurately"
+        def msg = "Hub geolocation not set, using ${timeZone.getDisplayName()} timezone. Use the SmartThings app to set the Hub geolocation to identify the correct timezone."
+        log.error msg
+        sendPush msg
     }
 
     def doChange = false
@@ -3406,7 +3689,7 @@ private checkSchedule(def i, def x) {
     log.trace "Current time: ${currentDT.format("EEE MMM dd yyyy HH:mm z", timeZone)}"
 
     // Check if we are within operating times
-    if (settings."userStartTime${x}${i}" != null && settings."userEndTime${x}${i}" != null) {
+    if (settings."userStartTime${x}${i}" && settings."userEndTime${x}${i}") {
         def scheduledStart = timeToday(settings."userStartTime${x}${i}", timeZone)
         def scheduledEnd = timeToday(settings."userEndTime${x}${i}", timeZone)
 
@@ -3469,9 +3752,13 @@ private checkSchedule(def i, def x) {
 
 private void sendText(number, message) {
     if (number) {
-        def phones = number.split("\\*")
+        def phones = number.replaceAll("[;,#]", "*").split("\\*") // Some users accidentally use ;,# instead of * and ST can't handle *,#+ in the number except for + at the beginning
         for (phone in phones) {
-            sendSms(phone, message)
+            try {
+                sendSms(phone, message)
+            } catch (Exception e) {
+                sendPush "Invalid phone number $phone"
+            }
         }
     }
 }
@@ -3495,6 +3782,44 @@ private void sendNotifications(message, user = "") {
     }
     if (settings."audioDevices${user}") {
         settings."audioDevices${user}"*.playTextAndResume(message)
+    }
+}
+
+// Remove rental user settings called from a runIn offline
+def removeUsersOffline(evt) {
+    log.trace "Offline removing settings users: ${evt.data}"
+    removeUsers(evt.data)
+}
+
+// Remove users settings in the app (array of users slot numbers)
+private removeUsers(users) {
+    def map = [] // Consolidate and remove since it's faster with the DB otherwise it times out
+
+    users?.each { user ->
+        //log.trace "Removing settings user: $user, code: $code, startDate: $startDate, startTime: $startTime, expDate: $expDate, expTime: $expTime"
+        map << "userNames${user}" // name
+        map << "userCodes${user}" // code
+        map << "userType${user}" // type
+        map << "userStartDate${user}" // start date
+        map << "userExpireDate${user}" // expire date
+        map << "userStartTime${user}" // start time
+        map << "userExpireTime${user}" // expire time
+        map << "userNotify${user}" // notifications for user
+        map << "userNotifyUseCount${user}" // how many notifications for user
+        map << "userLocks${user}" // user locks
+        map << "userOverrideUnlockActions${user}" // custom actions
+        map << "userOverrideNotifications${user}" // custom notifications
+        map << "userModes${user}" // User active modes
+        map << "userNotifyModes${user}" // User notify modes
+        schedulesSuffix.each { schedule -> // Weekly schedules
+            map << "userStartTime${schedule}${user}" // End time
+            map << "userEndTime${schedule}${user}" // Start time
+            map << "userDayOfWeek${schedule}${user}" // Set DOW
+        }
+    }
+    
+    if (map) {
+        deleteSettings(map)
     }
 }
 
@@ -3556,7 +3881,7 @@ def checkForCodeUpdate(evt) {
                 if (appVersion > clientVersion()) {
                     def msg = "New version of app ${app.label} available: $appVersion, current version: ${clientVersion()}.\nPlease visit $serverUrl to get the latest version."
                     log.info msg
-                    if (!disableUpdateNotifications) {
+                    if (updateNotifications != false) { // The default true may not be registered
                         sendPush(msg)
                     }
                 } else {
@@ -3570,9 +3895,9 @@ def checkForCodeUpdate(evt) {
                         def deviceName = device?.currentValue("dhName")
                         def deviceVersion = ret.data?."$deviceName"
                         if (deviceVersion && (deviceVersion > device?.currentValue("codeVersion"))) {
-                            def msg = "New version of device ${device?.displayName} available: $deviceVersion, current version: ${device?.currentValue("codeVersion")}.\nPlease visit $serverUrl to get the latest version."
+                            def msg = "New version of device handler for ${device?.displayName} available: $deviceVersion, current version: ${device?.currentValue("codeVersion")}.\nPlease visit $serverUrl to get the latest version of $deviceName."
                             log.info msg
-                            if (!disableUpdateNotifications) {
+                            if (updateNotifications != false) { // The default true may not be registered
                                 sendPush(msg)
                             }
                         } else {
