@@ -21,7 +21,7 @@
 */ 
 
 def clientVersion() {
-    return "04.04.03"
+    return "04.05.01"
 }
 
 /*
@@ -29,6 +29,9 @@ def clientVersion() {
 * Works with all Z-Wave Locks including Schlage, Yale, Kiwkset, Monoprice, DanaLock, IDLock, Samsung, KeyWe, Delaney, Popp and August
 *
 * Change Log
+* 2019-10-20 - (v04.05.01) Show device as lock icon in new ST app, IDLock report RFID Mode
+* 2019-08-26 - (v04.05.00) Added support for new IDLock 1.6 z-wave firmware update
+* 2019-07-30 - (v04.04.04) Added generic lock fingerprint
 * 2019-07-16 - (v04.04.03) Added more Yale Z-Wave Plus locks
 * 2019-06-11 - (v04.04.02) Added more Yale locks
 * 2019-06-10 - (v04.04.01) Support for Kwikset Z-Wave Plus (Obsidian 954) and remote config locks (888)
@@ -154,7 +157,7 @@ def clientVersion() {
 
 metadata {
     // Automatically generated. Make future change here.
-    definition (name: "Universal Z-Wave Lock With Alarms", namespace: "rboy", author: "RBoy Apps", mnmn: "SmartThings", vid:"generic-lock") {
+    definition (name: "Universal Z-Wave Lock With Alarms", namespace: "rboy", author: "RBoy Apps", mnmn: "SmartThings", ocfDeviceType: "oic.d.smartlock", vid:"generic-lock") {
         capability "Actuator"
         capability "Lock"
         capability "Polling"
@@ -210,6 +213,7 @@ metadata {
         fingerprint deviceId: "0x4003", inClusters: "0x72,0x86,0x98" // Kwikset 910/916/914, Yale KeyFree UK
 
         // New fingerprint format (MSR ==> mfr-prod-model)
+        fingerprint inClusters: "0x62, 0x63" // Generic lock and user codes
         fingerprint type:"4004", cc:"98" // Generic Z-Wave lock
         fingerprint type:"4003", cc:"98" // Generic Z-Wave lock
         //fingerprint type:"4003", cc:"72,86,98", deviceJoinName:"Kwikset/Yale Z-Wave Lock" // Generic Kwikset/Yale
@@ -264,8 +268,8 @@ metadata {
         fingerprint mfr:"0129", prod:"800C", model:"0F00", deviceJoinName:"Yale Assure Touchscreen Lever Lock" // YRL226-ZW2
         fingerprint mfr:"0129", prod:"8008", model:"0A00", deviceJoinName:"Yale Nextouch AUR-NTM-62 Z-Wave Plus Lock" // zw:Fs type:4003 cc:5E,72,98,5A,73,86 sec:80,62,85,59,71,70,63,8A,8B,4C,4E,7A
         
-        fingerprint mfr:"0230", prod:"0003", model:"0001", deviceJoinName:"IDLock 101 Z-Wave/RFID Lock" // zw:Fs type:4003 mfr:0230 prod:0003 model:0001 ver:1.00 zwv:4.05 lib:03 cc:5E,72,98,5A,80,73,70 sec:86,62,63,85,59,71,7A role:07 ff:8300 ui:8300
-        fingerprint mfr:"0373", prod:"0003", model:"0001", deviceJoinName:"IDLock 150 Z-Wave/RFID Lock" // zw:Fs type:4003 mfr:0373 prod:0003 model:0001 ver:1.05 zwv:4.05 lib:03 cc:5E,72,98,5A,73,70 sec:86,62,63,85,59,71,7A,80 role:07 ff:8300 ui:8300
+        fingerprint mfr:"0230", prod:"0003", model:"0001", deviceJoinName:"IDLock 101 Lock" // zw:Fs type:4003 mfr:0230 prod:0003 model:0001 ver:1.00 zwv:4.05 lib:03 cc:5E,72,98,5A,80,73,70 sec:86,62,63,85,59,71,7A role:07 ff:8300 ui:8300
+        fingerprint mfr:"0373", prod:"0003", model:"0001", deviceJoinName:"IDLock 150 Lock" // zw:Fs type:4003 mfr:0373 prod:0003 model:0001 ver:1.05 zwv:4.05 lib:03 cc:5E,72,98,5A,73,70 sec:86,62,63,85,59,71,7A,80 role:07 ff:8300 ui:8300
         
         fingerprint mfr:"010E", prod:"0008", model:"0002", deviceJoinName:"DanaLock V2 BLE, Z-Wave EU" // Circle
         fingerprint mfr:"010E", prod:"0008", model:"0001", deviceJoinName:"DanaLock V2 BLE, Z-Wave EU" // Square
@@ -334,7 +338,7 @@ metadata {
         input title: "", description: "Volume level when audio is enabled", displayDuringSetup: false, type: "paragraph", element: "paragraph"
         input("idlockVolume", "enum", title:"Volume level", description: "Audio enabled volume", defaultValue: "5", options: idlockVolumeOptions, required: false, displayDuringSetup: false)
         input title: "", description: "Relock if door is unlocked but remains unopened", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-        input("idlockRelock", "bool", title:"Relock", description: "Relock if unopened", defaultValue: "false", required: false, displayDuringSetup: false)
+        input("idlockRelock", "bool", title:"Unopened relock", description: "Relock if unopened", defaultValue: "false", required: false, displayDuringSetup: false)
     }
 
     tiles(scale: 2) {
@@ -730,6 +734,8 @@ def doConfigure() {
 	state.configured = true
 	def cmds = []
     cmds << configureLock() // Configure lock settings
+    cmds << zwave.manufacturerSpecificV2.manufacturerSpecificGet().format() // Some locks only support non secure MSR responses (Schlage)
+    cmds << secure(zwave.manufacturerSpecificV2.manufacturerSpecificGet()) // Some locks only support secure MSR responses (August Pro)
 	cmds << secure(zwave.doorLockV1.doorLockOperationGet())
 	cmds << getBatteryState()
     cmds << getCodeLength()
@@ -889,11 +895,13 @@ def zwaveEvent(DoorLockOperationReport cmd) {
         }
     }
 
-	if (generatesDoorLockOperationReportBeforeAlarmReport()) {
-		// we're expecting lock events to come after notification events, but for specific yale locks they come out of order
-		runIn(3, "delayLockEvent", [data: [map: map]])
+	if ((device.currentValue("lock") != map.value) && generatesDoorLockOperationReportBeforeAlarmReport()) {
+		// we're expecting lock events to come after notification events, but for specific locks they come out of order, only delay if the state has changed since a bug in ST doesn't overwrite the last state and locks like IDLock generate this before and after a code is entered
+        log.trace "Lock generatesDoorLockOperationReportBeforeAlarmReport, delaying report"
+		runIn(1, "delayLockEvent", [data: [map: map], overwrite: true]) // Don't delay too long otherwise a rapid lock, unlock may send wrong state
         return [:]
 	} else {
+        unschedule("delayLockEvent") // If there's a pending report, don't send it since we have a newer report
 		return result ? [createEvent(map), *result] : createEvent(map)
 	}
 }
@@ -959,9 +967,18 @@ private def handleAccessAlarmReport(cmd) {
 			map.descriptionText = "Unlocked manually"
 			map.data = [ method: "manual" ]
 			break
-		case 3: // Locked by command, Danalock/Yale RF Lock
-			map.descriptionText = "Locked"
-			map.data = [ method: "command" ]
+		case 3: // Locked by command, Danalock/Yale/IDLock RF Lock
+            if (cmd.numberOfEventParameters) { // IDLock RFID
+                codeID = readCodeSlotId(cmd)
+            }            
+            if (codeID != null) {
+                codeName = getCodeName(lockCodes, codeID)
+                map.descriptionText = "Locked by \"$codeName\""
+                map.data = [ codeId: codeID as String, usedCode: codeID, codeName: codeName, method: "rfid" ]
+            } else { // Yale and Danalock RF
+                map.descriptionText = "Locked"
+                map.data = [ method: "command" ]
+            }
 			break
 		case 4: // Unlocked by command, RF Unlock
 			if (cmd.numberOfEventParameters) { // IDLock RFID
@@ -970,7 +987,7 @@ private def handleAccessAlarmReport(cmd) {
         	if (codeID != null) {
 				codeName = getCodeName(lockCodes, codeID)
 				map.descriptionText = "Unlocked by \"$codeName\""
-				map.data = [ codeId: codeID as String, usedCode: codeID, method: "rfid" ]
+				map.data = [ codeId: codeID as String, usedCode: codeID, codeName: codeName, method: "rfid" ]
             } else { // Yale and Danalock RF
 				map.descriptionText = "Unlocked"
 				map.data = [ method: "command" ]
@@ -1085,8 +1102,11 @@ private def handleAccessAlarmReport(cmd) {
 		case 0x13:
 			map = [ name: "invalidCode", value: "detected", descriptionText: "Keypad attempts exceed code entry limit", isStateChange: true, displayed: true ]
 			break
-		case 0x14: // IDLock invalid RFID code (5 bytes long) and Danalock invalid RF code
-			map = [ name: "invalidCode", value: "detected", descriptionText: "Invalid code ${cmd.eventParameter?.join("")}", isStateChange: true, displayed: true ]
+		case 0x14: // IDLock invalid keypad/RFID unlock code (5 bytes long) and Danalock invalid RF code
+			map = [ name: "invalidCode", value: "detected", descriptionText: "Invalid unlock code ${cmd.eventParameter?.drop(1)?.collect{ Integer.toHexString(it) }?.join("")?.replaceAll("0", "")?.replaceAll("a", "0")}", isStateChange: true, displayed: true ] // 0 shows as 10 and fillers as 0 for idlock
+			break
+		case 0x15: // IDLock invalid keypad/RFID lock code (5 bytes long)
+			map = [ name: "invalidCode", value: "detected", descriptionText: "Invalid lock code ${cmd.eventParameter?.drop(1)?.collect{ Integer.toHexString(it) }?.join("")?.replaceAll("0", "")?.replaceAll("a", "0")}", isStateChange: true, displayed: true ] // 0 shows as 10 and fillers as 0 for idlock
 			break
 		case 0x11: // Keypad busy
 			map = [ descriptionText: "Keypad is busy" ]
@@ -1148,7 +1168,7 @@ private def handleBurglarAlarmReport(cmd) {
 	def map = [ name: "tamper", value: "detected", isStateChange: true ]
 	map.data = [ lockName: deviceName ]
 	switch (cmd.zwaveAlarmEvent) {
-		case 0:
+		case 0: // IDLock
 			map.value = "clear"
 			map.descriptionText = "Tamper alert cleared"
 			break
@@ -1159,7 +1179,7 @@ private def handleBurglarAlarmReport(cmd) {
 			map.descriptionText = "Intrusion attempt detected"
 			break
         case 8: // Samsung motion detection
-		case 3:
+		case 3: // IDLock tampering, product covering removed
 			activateMotion("$device.displayName: Door tampering activity detected")
 			runIn(60, deactivateMotion) // Clear motion and tamper after 60 seconds, since tamper clear is never sent by a lock
 			map.descriptionText = "Covering removed"
@@ -1219,10 +1239,13 @@ private def handleEmergencyAlarmReport(cmd) {
 	def deviceName = device.displayName
 	def map = null
 	switch(cmd.zwaveAlarmEvent) {
+		case 0x00: // IDLock
+			map = [ descriptionText: "Emergency cleared" ]
+			break
 		case 0x01:
 			map = [ descriptionText: "Contact police" ]
 			break
-		case 0x02:
+		case 0x02: // IDLock
 			map = [ descriptionText: "Contact fire service" ]
 			break
 		default:
@@ -1377,10 +1400,10 @@ private def handleAlarmReportUsingAlarmType(cmd) {
 			map = [ descriptionText: "Batteries replaced", isStateChange: true ]
 			break
 		case 131: // Disabled user entered at keypad
-			map = [ name: "invalidCode", value: "detected", descriptionText: "Disabled code ${cmd.alarmLevel} was entered", isStateChange: true, displayed: true ]
+			map = [ name: "invalidCode", value: "detected", descriptionText: "Disabled user ${cmd.alarmLevel} was entered", isStateChange: true, displayed: true ]
 			break
 		case 132: // Yale Out of schedule user (valid)
-			map = [ name: "invalidCode", value: "detected", descriptionText: "Out of Schedule code $cmd.alarmLevel was entered", isStateChange: true, displayed: true ]
+			map = [ name: "invalidCode", value: "detected", descriptionText: "Out of Schedule user ${cmd.alarmLevel} was entered", isStateChange: true, displayed: true ]
 			break
 		case 144: // Yale unlocked using RFID tag
 			map = [ name: "lock", value: "unlocked" ]
@@ -1835,7 +1858,7 @@ def stateCheck() {
  * Called when the user taps on the refresh button
  */
 def refresh() {
-    log.debug "Refresh called, Device MSR is $state.MSR\n$zwaveInfo"
+    log.debug "Refresh called, Device MSR is ${state.MSR}, FW is ${state.fw}\n$zwaveInfo"
     identifyLockModel()
 
     if (!device.currentValue("checkInterval")) { // If the user updated the device handler
@@ -1898,7 +1921,7 @@ def refresh() {
     cmds << secure(zwave.doorLockV1.doorLockOperationGet())
     cmds << getBatteryState() // Battery
 
-    if (!state.fw) {
+    if (!state.fw || isIDLock()) { // IDLock fwupdate changes things
         cmds << zwave.versionV1.versionGet().format()
     }
     
@@ -1969,7 +1992,7 @@ def poll() {
         cmds << getAudioState() // Audio/Beeper
         state.lastPoll = now()
     }
-	if (!state.fw) {
+	if (!state.fw || isIDLock()) { // IDLock fwupdate changes things
 		cmds << zwave.versionV1.versionGet().format()
 	}
     if (!state.lastbatt || secondsPast(state.lastbatt, 24*60*60)) {
@@ -1994,8 +2017,8 @@ def poll() {
  * @return The command for user code get
  */
 def requestCode(codeID) {
-    if (isIDLock() && !isIDLock101()) { // IDLock 150, starting 60 are keypad PIN users (user 1 is master and user 2 is service (remotely programmable) but we ignore for IDLock150)
-        codeID = codeID + 59 // First keypad user is slot  for ST
+    if (isIDLock() && !isIDLock101()) { // IDLock 150, old firmware starting 60 are keypad PIN users (user 1 is master and user 2 is service (remotely programmable) but we ignore for IDLock150)
+        codeID = codeID + (isIDLockNewFormat() ? 0 : 59) // First keypad user is slot  for ST
     }
 	secure(zwave.userCodeV1.userCodeGet(userIdentifier: codeID))
 }
@@ -2209,8 +2232,8 @@ def setCode(codeID, code, codeName = null) {
 	def strname = (codeName ?: "Code $codeID")
 	state["setname$codeID"] = strname
 	
-    if (isIDLock() && !isIDLock101()) { // IDLock 150, starting 60 are keypad PIN users (user 1 is master and user 2 is service (remotely programmable) but we ignore for IDLock150)
-        codeID = codeID + 59 // First keypad user is slot  for ST
+    if (isIDLock() && !isIDLock101()) { // IDLock 150, older firmware starting 60 are keypad PIN users (user 1 is master and user 2 is service (remotely programmable) but we ignore for IDLock150)
+        codeID = codeID + (isIDLockNewFormat() ? 0 : 59) // First keypad user is slot  for ST
     }
     def cmds = validateAttributes()
 	cmds << secure(zwave.userCodeV1.userCodeSet(userIdentifier:codeID, userIdStatus:1, user:code))
@@ -2253,8 +2276,8 @@ def updateCodes(codeSettings) {
 			def n = name[4..-1].toInteger()
 			if (updated) { // Don't check code size here, leave it to the SmartApp as different locks have different limitations
 				log.debug "Setting code number $n"
-                if (isIDLock() && !isIDLock101()) { // IDLock 150, starting 60 are keypad PIN users (user 1 is master and user 2 is service (remotely programmable) but we ignore for IDLock150)
-                    n = n + 59 // First keypad user is slot  for ST
+                if (isIDLock() && !isIDLock101()) { // IDLock 150, older firmware starting 60 are keypad PIN users (user 1 is master and user 2 is service (remotely programmable) but we ignore for IDLock150)
+                    n = n + (isIDLockNewFormat() ? 0 : 59) // First keypad user is slot  for ST
                 }
 				set_cmds << secure(zwave.userCodeV1.userCodeSet(userIdentifier:n, userIdStatus:1, user:updated))
                 set_cmds << secure(zwave.userCodeV1.userCodeGet(userIdentifier:n)) // Some locks don't report the code update
@@ -2305,11 +2328,11 @@ def deleteCode(codeID) {
 	// Calling user code get when deleting a code because some Kwikset locks do not generate
 	// AlarmReport when a code is deleted manually on the lock
     if (isIDLock()) { // It needs user set to 0000 to delete the user
-        if (!isIDLock101()) { // IDLock 150, starting 60 are keypad PIN users (user 1 is master and user 2 is service (remotely programmable) but we ignore for IDLock150)
-            codeID = codeID + 59 // First keypad user is slot  for ST
+        if (!isIDLock101()) { // IDLock 150, older firmware starting 60 are keypad PIN users (user 1 is master and user 2 is service (remotely programmable) but we ignore for IDLock150)
+            codeID = codeID + (isIDLockNewFormat() ? 0 : 59) // First keypad user is slot  for ST
         }
         secureSequence([
-            zwave.userCodeV1.userCodeSet(userIdentifier:codeID, userIdStatus:0, user:"0000"), // IDLock needs an explicit user 0000 to delete the code
+            zwave.userCodeV1.userCodeSet([userIdentifier:codeID, userIdStatus:0] + (isIDLockNewFormat() ? [] : [user:"0000"])), // Old IDLock needs an explicit user 0000 to delete the code
             zwave.userCodeV1.userCodeGet(userIdentifier:codeID)
         ], 4200)
     } else {
@@ -2885,6 +2908,21 @@ private idLockConfigurationReport(cmd) {
             }
             break
             
+        case idLockParamMap.RFIDMode.Param:
+        	switch (cmd.scaledConfigurationValue) {
+                case idLockParamMap.RFIDMode.Enabled:
+                	map = [descriptionText: "RFID mode enabled"]
+                	break
+                case idLockParamMap.RFIDMode.Disabled:
+                	map = [descriptionText: "RFID mode disabled"]
+                	break
+                default:
+                	map = [descriptionText: "RFID mode Unknown: ${cmd.scaledConfigurationValue}"]
+                	break
+            }
+        	results << createEvent(map)
+            break
+
         case idLockParamMap.DoorHingeLeft.Param:
             map = [descriptionText: "Door hinge mode: ${cmd.scaledConfigurationValue ? "Left Handle" : "Right Handle"}"]
             results << createEvent(map)
@@ -3486,7 +3524,7 @@ def enableKeypad() {
     log.debug "Enabling keypad"
 
     if (!(device.currentState('codeunlock')?.value && (device.currentState('codeunlock')?.value != "unknown"))) { // Check if we have succesfully managed to read the feature state, if not then it isn't supported
-        log.warn "Unsupported device with MSR $state.MSR, Keypad enable feature not available"
+        log.warn "Device with MSR $state.MSR, Keypad enable feature not available"
         sendEvent(name: "contactDeveloper", value: "Feature not supported, MSR $state.MSR", isStateChange: true, displayed: true) // Report to dev with MSR
         return
     }
@@ -3538,7 +3576,7 @@ def disableKeypad() {
     log.debug "Disabling keypad"
 
     if (!(device.currentState('codeunlock')?.value && (device.currentState('codeunlock')?.value != "unknown"))) { // Check if we have succesfully managed to read the feature state, if not then it isn't supported
-        log.warn "Unsupported device with MSR $state.MSR, Keypad disable feature not available"
+        log.warn "Device with MSR $state.MSR, Keypad disable feature not available"
         sendEvent(name: "contactDeveloper", value: "Feature not supported, MSR $state.MSR", isStateChange: true, displayed: true) // Report to dev with MSR
         return
     }
@@ -3645,7 +3683,7 @@ def enableAudio() {
     log.debug "Enabling audio/beeper" 
 
     if (!(device.currentState('beeper')?.value && (device.currentState('beeper')?.value != "unknown"))) { // Check if we have succesfully managed to read the feature state, if not then it isn't supported
-        log.warn "Unsupported device with MSR $state.MSR, Audio/Beeper feature not available"
+        log.warn "Device with MSR $state.MSR, Audio/Beeper feature not available"
         sendEvent(name: "contactDeveloper", value: "Audio/Beeper feature not supported, MSR $state.MSR", isStateChange: true, displayed: true) // Report to dev with MSR
         return
     }
@@ -3726,7 +3764,7 @@ def disableAudio() {
     log.debug "Disabling audio/beeper" 
 
     if (!(device.currentState('beeper')?.value && (device.currentState('beeper')?.value != "unknown"))) { // Check if we have succesfully managed to read the feature state, if not then it isn't supported
-        log.warn "Unsupported device with MSR $state.MSR, Audio/Beeper feature not available"
+        log.warn "Device with MSR $state.MSR, Audio/Beeper feature not available"
         sendEvent(name: "contactDeveloper", value: "Audio/Beeper feature not supported, MSR $state.MSR", isStateChange: true, displayed: true) // Report to dev with MSR
         return
     }
@@ -3798,7 +3836,7 @@ private getOneTouchLockState() {
         log.trace "Found Yale"
         parameter = 11
     } else {
-        log.warn "Unsupported device with MSR $state.MSR, OneTouch Lock feature not supported"
+        log.warn "Device with MSR $state.MSR, OneTouch Lock feature not supported"
         sendEvent(name: "onetouchlock", value: "", displayed: false) // Not supported
         return
     }
@@ -3810,7 +3848,7 @@ def enableOneTouchLock() {
     log.debug "Enabling OneTouch Lock" 
 
     if (!(device.currentState('onetouchlock')?.value && (device.currentState('onetouchlock')?.value != "unknown"))) { // Check if we have succesfully managed to read the feature state, if not then it isn't supported
-        log.warn "Unsupported device with MSR $state.MSR, OneTouch Lock feature not available"
+        log.warn "Device with MSR $state.MSR, OneTouch Lock feature not available"
         sendEvent(name: "contactDeveloper", value: "OneTouch Lock feature not supported, MSR $state.MSR", isStateChange: true, displayed: true) // Report to dev with MSR
         return
     }
@@ -3847,7 +3885,7 @@ def disableOneTouchLock() {
     log.debug "Disabling OneTouch Lock"
 
     if (!(device.currentState('onetouchlock')?.value && (device.currentState('onetouchlock')?.value != "unknown"))) { // Check if we have succesfully managed to read the feature state, if not then it isn't supported
-        log.warn "Unsupported device with MSR $state.MSR, OneTouch Lock feature not available"
+        log.warn "Device with MSR $state.MSR, OneTouch Lock feature not available"
         sendEvent(name: "contactDeveloper", value: "OneTouch Lock feature not supported, MSR $state.MSR", isStateChange: true, displayed: true) // Report to dev with MSR
         return
     }
@@ -3910,7 +3948,7 @@ private getAutolockState() {
         log.trace "Found Danalock V3"
         parameter = danalockV3ParamMap.AutoLock.Param
     } else {
-        log.warn "Unsupported device with MSR $state.MSR, AutoLock feature not supported"
+        log.warn "Device with MSR $state.MSR, AutoLock feature not supported"
         sendEvent(name: "autolock", value: "", displayed: false) // Not supported
         return
     }
@@ -3922,7 +3960,7 @@ def enableAutolock() {
     log.debug "Enabling AutoLock" 
 
     if (!(device.currentState('autolock')?.value && (device.currentState('autolock')?.value != "unknown"))) { // Check if we have succesfully managed to read the feature state, if not then it isn't supported
-        log.warn "Unsupported device with MSR $state.MSR, AutoLock feature not available"
+        log.warn "Device with MSR $state.MSR, AutoLock feature not available"
         sendEvent(name: "contactDeveloper", value: "AutoLock feature not supported, MSR $state.MSR", isStateChange: true, displayed: true) // Report to dev with MSR
         return
     }
@@ -3986,7 +4024,7 @@ def disableAutolock() {
     log.debug "Disabling AutoLock"
 
     if (!(device.currentState('autolock')?.value && (device.currentState('autolock')?.value != "unknown"))) { // Check if we have succesfully managed to read the feature state, if not then it isn't supported
-        log.warn "Unsupported device with MSR $state.MSR, AutoLock feature not available"
+        log.warn "Device with MSR $state.MSR, AutoLock feature not available"
         sendEvent(name: "contactDeveloper", value: "AutoLock feature not supported, MSR $state.MSR", isStateChange: true, displayed: true) // Report to dev with MSR
         return
     }
@@ -4068,7 +4106,7 @@ private getAlarmLevel() {
         log.trace "Found Schlage"
         parameter = 7
     } else {
-        log.warn "Unsupported device with MSR $state.MSR, Alarm feature not supported"
+        log.warn "Device with MSR $state.MSR, Alarm feature not supported"
         sendEvent(name: "alarm", value: "", displayed: false) // Not supported
         runIn(5, updateTiles) // Update the alarm status on the tiles after 5 seconds giving it time to register
         return
@@ -4081,7 +4119,7 @@ def setAlarm(String newMode) {
     log.debug "Set Alarm level to $newMode"
 
     if (!(device.currentState('alarm')?.value && (device.currentState('alarm')?.value != "unknown"))) { // Check if we have succesfully managed to read the feature state, if not then it isn't supported
-        log.warn "Unsupported device with MSR $state.MSR, Alarm feature not available"
+        log.warn "Device with MSR $state.MSR, Alarm feature not available"
         sendEvent(name: "contactDeveloper", value: "Alarm feature not supported, MSR $state.MSR", isStateChange: true, displayed: true) // Report to dev with MSR
         return
     }
@@ -4125,7 +4163,7 @@ def alarmToggle() {
     log.debug "Set Alarm Toggle"
 
     if (!(device.currentState('alarm')?.value && (device.currentState('alarm')?.value != "unknown"))) { // Check if we have succesfully managed to read the feature state, if not then it isn't supported
-        log.warn "Unsupported device with MSR $state.MSR, Alarm feature not available"
+        log.warn "Device with MSR $state.MSR, Alarm feature not available"
         sendEvent(name: "contactDeveloper", value: "Alarm feature not supported, MSR $state.MSR", isStateChange: true, displayed: true) // Report to dev with MSR
         return
     }
@@ -4215,7 +4253,7 @@ def getSensitiveLevel(currentMode) {
         }
         parameter = 7 + currentModeValue
     } else {
-        log.warn "Unsupported device with MSR $state.MSR, Alarm Sensitivity feature not supported"
+        log.warn "Device with MSR $state.MSR, Alarm Sensitivity feature not supported"
         sendEvent(name: "sensitive", value: "", displayed: false) // Not supported
         runIn(5, updateTiles) // Update the alarm status on the tiles after 5 seconds giving it time to register
         return
@@ -4228,7 +4266,7 @@ def setSensitivity(String newMode) {
     log.debug "Set Alarm Sensitivity to $newMode"
 
     if (!(device.currentState('sensitive')?.value && (device.currentState('alarm')?.value != "unknown"))) { // Check if we have succesfully managed to read the feature state, if not then it isn't supported
-        log.warn "Unsupported device with MSR $state.MSR, Alarm Sensitivity feature not available"
+        log.warn "Device with MSR $state.MSR, Alarm Sensitivity feature not available"
         sendEvent(name: "contactDeveloper", value: "Alarm Sensitivity feature not supported, MSR $state.MSR", isStateChange: true, displayed: true) // Report to dev with MSR
         return
     }
@@ -4287,7 +4325,7 @@ def sensitiveToggle() {
     log.debug "Set Alarm Sensitivity Toggle"
 
     if (!(device.currentState('sensitive')?.value && (device.currentState('alarm')?.value != "unknown"))) { // Check if we have succesfully managed to read the feature state, if not then it isn't supported
-        log.warn "Unsupported device with MSR $state.MSR, Alarm Sensitivity feature not available"
+        log.warn "Device with MSR $state.MSR, Alarm Sensitivity feature not available"
         sendEvent(name: "contactDeveloper", value: "Alarm Sensitivity feature not supported, MSR $state.MSR", isStateChange: true, displayed: true) // Report to dev with MSR
         return
     }
@@ -4601,51 +4639,51 @@ private danaLockConfigureLockV2() {
 }
 
 def activateSmoke(String msg) {
-    log.debug "$device.displayName: Activating smoke alarm sensor"
+    log.info "$device.displayName: Activating smoke alarm sensor"
     sendEvent([ name: "smoke", value: "detected",  descriptionText: msg, displayed: true ])
 }
 
 def deactivateSmoke() {
-    log.debug "$device.displayName: Deactivating smoke alarm sensor" 
+    log.info "$device.displayName: Deactivating smoke alarm sensor" 
     sendEvent([ name: "smoke", value: "clear",  descriptionText: "$device.displayName: Deactivating smoke/fire alarm sensor", displayed: true ])
 }
 
 def resetSmoke() {
-    log.debug "$device.displayName: Resetting smoke alarm sensor" 
+    log.info "$device.displayName: Resetting smoke alarm sensor" 
     sendEvent([ name: "smoke", value: "clear",  descriptionText: "$device.displayName: Resetting smoke/fire alarm sensor", displayed: true ])
 }
 
 def activateMotion(String msg) {
-    log.debug "$device.displayName: Activating door tampering activity sensor" 
+    log.info "$device.displayName: Activating door tampering activity sensor" 
     sendEvent([ name: "motion", value: "active",  descriptionText: msg, displayed: true ])
 }
 
 def deactivateMotion() {
-    log.debug "$device.displayName: Deactivating door tampering activity sensor" 
+    log.info "$device.displayName: Deactivating door tampering activity sensor" 
     sendEvent([ name: "motion", value: "inactive",  descriptionText: "$device.displayName: Deactivating door tampering activity sensor", displayed: true ])
     sendEvent([ name: "tamper", value: "clear",  descriptionText: "$device.displayName: Deactivating door tampering activity sensor", displayed: true ])
 }
 
 def resetMotion() {
-    log.debug "$device.displayName: Resetting door tampering activity sensor" 
+    log.info "$device.displayName: Resetting door tampering activity sensor" 
     sendEvent([ name: "motion", value: "inactive",  descriptionText: "$device.displayName: Resetting door tampering activity sensor", displayed: true ])
     sendEvent([ name: "tamper", value: "clear",  descriptionText: "$device.displayName: Resetting door tampering activity sensor", displayed: true ])
 }
 
 def setState(String position, String msg) {
-    log.debug "$device.displayName: Setting door sensor: $position" 
+    log.info "$device.displayName: Setting door sensor: $position" 
     sendEvent([ name: "contact", value: position, descriptionText: msg ])
     sendEvent([ name: "contactX", value: position, displayed: false ])
 }
 
 def resetState() {
-    log.debug "$device.displayName: Resetting door closed sensor" 
+    log.info "$device.displayName: Resetting door closed sensor" 
     sendEvent([ name: "contact", value: "closed", descriptionText: "$device.displayName Resetting door sensor as closed", displayed: true ])
     sendEvent([ name: "contactX", value: "unknown", displayed: false ])
 }
 
 def reLocked() {
-    log.debug "$device.displayName: Sending lock door notification as a follow up the unlocked event for the non motorized deadbolt" 
+    log.info "$device.displayName: Sending lock door notification as a follow up the unlocked event for the non motorized deadbolt" 
     def map = [ name: "lock", value: "locked", method: "auto", displayed: true ]
     sendEvent(map)
 }
@@ -4817,7 +4855,7 @@ private isIDLock101() { // IDLock 101 model
 	return false
 }
 
-def isIDLock150() { // IDLock 150 model
+private isIDLock150() { // IDLock 150 model
 	if (state.MSR?.startsWith("0373") || ("0373" == zwaveInfo.mfr)) {
 		if ("IDLock" != getDataValue("manufacturer")) {
 			updateDataValue("manufacturer", "IDLock")
@@ -4825,6 +4863,10 @@ def isIDLock150() { // IDLock 150 model
 		return true
 	}
 	return false
+}
+
+private isIDLockNewFormat() { // New IDLock firmware user map
+    return (isIDLock150() && (((zwaveInfo?.ver as Float) >= 1.06) || ((state.fw as Float) >= 1.6))) // IDLock 150 changed the user mapping in newer firmware
 }
 
 /**
@@ -4922,14 +4964,15 @@ def isDelaneyLock() {
  * @return true if this lock generates door lock operation report before alarm report, false otherwise
  */
 def generatesDoorLockOperationReportBeforeAlarmReport() {
-	//Fix for ICP-2367, ICP-2366
-    if (isYaleLock() && (
-        ("0007" == zwaveInfo.prod && "0001" == zwaveInfo.model) ||
-        ("6600" == zwaveInfo.prod && "0002" == zwaveInfo.model) )) {
-        //Yale Keyless Connected Smart Door Lock
+    //Fix for ICP-2367, ICP-2366
+    if (isIDLockNewFormat() ||
+        (isYaleLock() && ( // Yale Keyless Connected Smart Door Lock
+            ("0007" == zwaveInfo.prod && "0001" == zwaveInfo.model) ||
+            ("6600" == zwaveInfo.prod && "0002" == zwaveInfo.model)))
+       ) {
         return true
-	}
-	return false
+    }
+    return false
 }
 
 /**
@@ -4959,14 +5002,24 @@ private correctLockCode(codeID) {
     }
     
     if (isIDLock()) {
-        if (codeID >= 60) { // 60-109 are keypad PIN users
-            codeID = codeID - (59 + (isIDLock101() ? 2 : 0)) // First keypad user is slot 3 for ST for IDLock 101 (1 is master and 2 is service) and slot 1 for IDLock 150
-        } else if (codeID >= 10) { // 10-59 are RFID users
-            codeID = codeID - 9
-        } else if (!isIDLock101() && (codeID == 1 || codeID == 2)) { // slot 1 is master and slot 2 is service (remotely programmable), report them as master for non IDLock 101
-            codeID = 0 // Report as master
-        } else if (codeID == 0) { // If it's 0 then it's a remote unlock from the mobile, report it as null
-            codeID = null
+        if (isIDLockNewFormat()) { // IDLock changed the user mapping in newer firmware
+            if (codeID >= 26 && codeID <= 51) { // 1-25 are keypad users, 26-51 are RFID users
+                codeID = codeID - 25
+            } else if (codeID == 108 || codeID == 109) { // 108 service pin, 109 master pin
+                codeID = 0 // Report as master
+            } else if (codeID == 0) { // If it's 0 then it's a remote unlock from the mobile, report it as null
+                codeID = null
+            }
+        } else {
+            if (codeID >= 60) { // 60-109 are keypad PIN users
+                codeID = codeID - (59 + (isIDLock101() ? 2 : 0)) // First keypad user is slot 3 for ST for IDLock 101 (1 is master and 2 is service) and slot 1 for IDLock 150
+            } else if (codeID >= 10) { // 10-59 are RFID users
+                codeID = codeID - 9
+            } else if (!isIDLock101() && (codeID == 1 || codeID == 2)) { // slot 1 is master and slot 2 is service (remotely programmable), report them as master for non IDLock 101
+                codeID = 0 // Report as master
+            } else if (codeID == 0) { // If it's 0 then it's a remote unlock from the mobile, report it as null
+                codeID = null
+            }
         }
     }
     
@@ -5056,6 +5109,7 @@ private getKwiksetRemoteParamMap(value = null) {
 private getIdLockParamMap(value = null) {
     [
         "DoorLockMode": 		[ Param: 1, Size: 1, Default: 1, Min: 0, Max: 3, Value: reverseValue(value) ].with { put('ParamValue', paramValue(value, get('Size'))); it }, // AutoLock and Away
+        "RFIDMode": 			[ Param: 2, Size: 1, Default: 5, Enabled: 5, Disabled: 9 ], // RFID Card
         "DoorHingeLeft": 		[ Param: 3, Size: 1, Default: 0, Enabled: 1, Disabled: 0 ], // Right or left door hinge
         "AudioVolumeLevel": 	[ Param: 4, Size: 1, Default: 5, Min: 1, Max: 6, Value: reverseValue(value) ].with { put('ParamValue', paramValue(value, get('Size'))); it }, // Audio volume level, 0 is disabled, range is from 1 to 6
         "RelockMode": 			[ Param: 5, Size: 1, Default: 1, Enabled: 1, Disabled: 0 ], // Relock mode
