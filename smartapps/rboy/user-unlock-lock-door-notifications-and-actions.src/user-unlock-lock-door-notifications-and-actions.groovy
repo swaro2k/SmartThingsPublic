@@ -21,7 +21,7 @@
 */ 
 
 def clientVersion() {
-    return "04.05.04"
+    return "04.07.00"
 }
 
 /**
@@ -30,6 +30,16 @@ def clientVersion() {
 * Copyright RBoy Apps, redistribution or reuse of code is not allowed without permission
 *
 * Change Log:
+* 2019-10-11 - (v04.07.00) Added support for Sonos spoken notification with volume, added option to disable rechecking and notifying open door
+* 2019-06-03 - (v04.06.03) Added support for new lock capabilities
+* 2019-04-16 - (v04.06.02) Fix optional text for ADT
+* 2019-04-12 - (v04.06.01) Check if user entered invalid characters for SMS number and notify on error
+* 2019-04-03 - (v04.06.00) Enable exit beeping on keypads using direct control for SHM/ADT when delayed actions are enabled
+* 2019-04-02 - (v04.05.10) Check for updates once a day and don't reset it everytime the user opens the app, allow user to save without selecting locks
+* 2019-03-23 - (v04.05.08) Sometimes on a fresh install ST saves corrupted data, handle it
+* 2019-03-20 - (v04.05.07) Clean up
+* 2019-03-18 - (v04.05.06) Show active users in green instead of blue
+* 2019-03-08 - (v04.05.05) Fixed extra notifications when using delayed lock actions
 * 2019-02-28 - (v04.05.04) Enabled keypad SHM/ADT control by default when detected
 * 2019-01-28 - (v04.05.03) Fix for direct control option not showing for renamed keypads when individual door controls are enabled
 * 2018-12-13 - (v04.05.02) Improve reinitialization after new version detected (requires app to be opened and saved to initiate changes)
@@ -120,18 +130,18 @@ def setupApp() {
     dynamicPage(name: "setupApp", title: "User Door Unlock/Lock Notifications and Actions v${clientVersion()}", install: true, uninstall: true) {    
         if (state.clientVersion) { // If the app has already been installed
             section("Select Lock(s)") {
-                input "locks","capability.lock", title: "Lock(s)", multiple: true, submitOnChange: true, image: "http://www.rboyapps.com/images/HandleLock.png"
+                input "locks", "capability.lock", title: "Lock(s)", required: false, multiple: true, submitOnChange: true, image: "http://www.rboyapps.com/images/HandleLock.png"
             }
 
             section("How many users do you want to monitor?") {
                 def maxCodes = 0
                 for (lock in locks) {
-                    Integer lockMax = lock.hasAttribute("maxCodes") ? lock.currentValue("maxCodes") : 0
+                    def lockMax = (lock.hasAttribute("maxCodes") ? lock.currentValue("maxCodes") : 0) as Integer
                     log.trace "$lock has max users: $lockMax"
                     maxCodes = maxCodes ? (lockMax ? Math.max(lockMax, maxCodes) as Integer : maxCodes) : (lockMax ?: 0) // Take the highest amongst all selected locks
                 }
                 input name: "maxUserNames", title: "Number of users${maxCodes ? " (1 to ${maxCodes})" : ""}", type: "number", required: true, multiple: false, image: "http://www.rboyapps.com/images/Users.png", range: "1..${maxCodes ?: 999}"
-                href(name: "users", title: "Manage users", page: "usersPage", description: "User names and custom actions", required: false, image: "http://www.rboyapps.com/images/User.png")
+                href(name: "users", title: "Manage users", page: "usersPage", description: "User names and custom actions", required: false, image: "http://www.rboyapps.com/images/UserPage.png")
             }
 
             section("General Settings") {
@@ -189,7 +199,10 @@ def notificationsPage(params) {
 
     dynamicPage(name:"notificationsPage", title: (user ? "Setup custom notifications for ${name ?: "user ${user}"}" : "Setup notification options"), uninstall: false, install: false) {
         section {
-            input "audioDevices${user}", "capability.audioNotification", title: "Play notifications on these devices", required: false, multiple: true, image: "http://www.rboyapps.com/images/Horn.png"
+            input "audioDevices${user}", "capability.audioNotification", title: "Speak notifications on", required: false, multiple: true, submitOnChange: true, image: "http://www.rboyapps.com/images/Horn.png"
+            if (settings."audioDevices${user}") {
+                input "audioVolume${user}", "number", title: "...at this volume level (optional)", description: "keep current", required: false, range: "1..100"
+            }
             input("recipients${user}", "contact", title: "Send notifications to", multiple: true, required: false, image: "http://www.rboyapps.com/images/Notifications.png") {
                 paragraph "You can enter multiple phone numbers by separating them with a '*'\nE.g. 5551234567*+448747654321"
                 input "sms${user}", "phone", title: "Send SMS notification to", required: false, image: "http://www.rboyapps.com/images/Notifications.png"
@@ -242,6 +255,7 @@ def openCloseDoorPage() {
                 input "openNotify${lock}", "bool", title: "Notify if door has been left open", defaultValue: priorNotifyOpen, required: false, submitOnChange: true
                 if (priorNotifyOpen) {
                     input "openNotifyTimeout${lock}", "number", title: "...for (minutes)", defaultValue: priorNotifyOpenTimeout, required: true, range: "1..*"
+                    input "openNotifyRepeat${lock}", "bool", title: "...recheck and notify", defaultValue: true, required: false
                 }
                 if (priorNotifyOpen || priorNotifyBeep) {
                     input "openNotifyModes${lock}", "mode", title: "...only when in this mode(s) (optional)", defaultValue: priorOpenNotifyModes, required: false, multiple: true
@@ -395,7 +409,7 @@ def unlockKeypadActionsPage(params) {
             }
             if (((lock ? (isLockKeypad ? !(settings."keypadArmDisarm${lock}${user}" != false) : true) : (areAllLockKeypad ? !(settings."keypadArmDisarm${lock}${user}" != false) : true)) && settings."adtDisarm${lock}${user}") ||
                 ((lock ? isLockKeypad : isAnyLockKeypad) && (settings."keypadArmDisarm${lock}${user}" != false))) { // If we have a seleted an ADT option
-                input "adtDevices", "capability.battery", title: "Select ADT panel(s)", multiple: true, required: (settings."adtDisarm${lock}${user}" ? true : false) // Required if we select ADT
+                input "adtDevices", "capability.battery", title: "Select ADT panel${settings."adtDisarm${lock}${user}" ? "" : " (optional)"}", multiple: false, required: (settings."adtDisarm${lock}${user}" ? true : false) // Required if we select ADT
             }
             input "homePhrase${lock}${user}", "enum", title: "Run routine", required: false, options: phrases, defaultValue: priorHomePhrase
             input "homeMode${lock}${user}", "mode", title: "Change mode to", required: false, multiple: false, defaultValue: priorHomeMode
@@ -448,7 +462,7 @@ def unlockManualActionsPage(params) {
             input "homeDisarmManual${lock}", "bool", title: "Disarm Smart Home Monitor", required: false
             input "adtDisarmManual${lock}", "bool", title: "Disarm ADT", required: false, submitOnChange: true
             if (settings."adtDisarmManual${lock}") { // If we have a seleted an ADT option
-                input "adtDevices", "capability.battery", title: "Select ADT panel(s)", multiple: true, required: true // Required if we select ADT
+                input "adtDevices", "capability.battery", title: "Select ADT panel", multiple: false, required: true // Required if we select ADT
             }
             input "homePhraseManual${lock}", "enum", title: "Run routine", required: false, options: phrases, defaultValue: priorHomePhrase
             input "homeModeManual${lock}", "mode", title: "Change mode to", required: false, multiple: false, defaultValue: priorHomeMode
@@ -568,7 +582,7 @@ def lockKeypadActionsPage(params) {
             }
             if (((lock ? (isLockKeypad ? !(settings."keypadArmDisarm${lock}${user}" != false) : true) : (areAllLockKeypad ? !(settings."keypadArmDisarm${lock}${user}" != false) : true)) && settings."adtArm${lock}${user}") ||
                 ((lock ? isLockKeypad : isAnyLockKeypad) && (settings."keypadArmDisarm${lock}${user}" != false))) { // If we have a seleted an ADT option
-                input "adtDevices", "capability.battery", title: "Select ADT panel(s)", multiple: true, required: (settings."adtArm${lock}${user}" ? true : false) // Required if we select ADT
+                input "adtDevices", "capability.battery", title: "Select ADT panel${settings."adtArm${lock}${user}" ? "" : " (optional)"}", multiple: false, required: (settings."adtArm${lock}${user}" ? true : false) // Required if we select ADT
             }
             if (lock ? isLockKeypad : isAnyLockKeypad) { // Show only if we have a supported keypad (for selected lock or for general settings)
                 def hrefParams = [
@@ -639,7 +653,7 @@ def lockManualActionsPage(params) {
             input "homeArmManual${lock}", "bool", title: "Arm Smart Home Monitor to Stay", required: false
             input "adtArmManual${lock}", "bool", title: "Arm ADT to Stay", required: false, submitOnChange: true
             if (settings."adtArmManual${lock}") { // If we have a seleted an ADT option
-                input "adtDevices", "capability.battery", title: "Select ADT panel(s)", multiple: true, required: true // Required if we select ADT
+                input "adtDevices", "capability.battery", title: "Select ADT panel", multiple: false, required: true // Required if we select ADT
             }
             input "externalLockPhraseManual${lock}", "enum", title: "Run routine", required: false, options: phrases, defaultValue: priorLockPhrase
             input "externalLockModeManual${lock}", "mode", title: "Change mode to", required: false, multiple: false, defaultValue: priorHomeMode
@@ -675,9 +689,7 @@ def usersPage() {
         section() {
             for (int i = 1; i <= maxUserNames; i++) {
                 def priorName = settings."userNames${i}"
-                def priorNotify = settings."userNotify${i}"
-                def priorNotifyModes = settings."userNotifyModes${i}"
-                //log.trace "Initial $i Name: $priorName, Notify: $priorNotify, NotifyModes: $priorNotifyModes"
+                //log.trace "Initial $i Name: $priorName"
 
                 // Params for user
                 def hrefParams = [
@@ -721,7 +733,7 @@ def userConfigPage(params) {
             //log.trace "Initial $i Name: $priorName, Notify: $priorNotify, NotifyModes: $priorNotifyModes"
 
             // User and code details/types
-            input "userNames${i}", "text", description: "Tap to set", title: "Name", multiple: false, required: false, submitOnChange: false, image: "http://www.rboyapps.com/images/User.png"
+            input "userNames${i}", "text", description: "Tap to set", title: "Name", multiple: false, required: false, submitOnChange: false, image: "http://www.rboyapps.com/images/UserPage.png"
             input "userNotify${i}", "bool", title: "Notify on use", defaultValue: true, required: false, submitOnChange: true, image: "http://www.rboyapps.com/images/Notifications.png"
             if (priorNotify != false) {
                 input "userNotifyUseCount${i}", "number", title: "...limit to only this many times", description: "no limit", required: false, range: "1..*"
@@ -760,8 +772,7 @@ def appTouch() {
     // Check for new versions of the code
     def random = new Random()
     Integer randomHour = random.nextInt(18-10) + 10
-    Integer randomDayOfWeek = random.nextInt(7-1) + 1 // 1 to 7
-    schedule("0 0 " + randomHour + " ? * " + randomDayOfWeek, checkForCodeUpdate) // Check for code updates once a week at a random day and time between 10am and 6pm
+    schedule("0 3 " + randomHour + " * * ?", checkForCodeUpdate) // Check for code updates everyday at a random time between 10am and 6pm with a 3 minute offset to avoid a platform timeout at the top of the hour
     
     // subscribe to events to kick start timers and presence/mode events to update code states
     subscribe(location, "mode", changeHandler)
@@ -780,7 +791,7 @@ def appTouch() {
             subscribe(settings."sensor${lock}", "contact", sensorHandler)
         }
         if (lock.hasAttribute('invalidCode')) {
-            log.trace "Found attribute 'invalidCode' on lock $lock, enabled support for invalid code detection"
+            log.trace "Found attribute 'invalidCode' on $lock, enabled support for invalid code detection"
             subscribe(lock, "invalidCode", lockHandler)
         }
     }
@@ -824,15 +835,14 @@ def changeHandler(evt) {
 
 // Handle changes to ADT states
 def adtChangeHandler(evt) {
-    log.trace "ADT state change notification, name: ${evt.name}, value: ${evt.value}"
+    log.trace "ADT state change notification, name: ${evt?.name}, value: ${evt?.value}"
 
     def msg = ""
-    def keypads = locks?.findAll{ lock -> lock.hasAttribute("armMode")} // Get all keypads and sync state with ADT
-    //def mode = settings."adtDevices"?.currentState("securitySystemStatus")?.value // This should the new ADT state
-    def user = "" // We don't check for individual user custom actions for keypads since synchronization needs to happen at the keypad level
-    def directControl = (settings."individualDoorActions${user}" ? keypads : [ "" ]).any { lock -> (settings."keypadArmDisarm${lock}${user}" != false) }
-    def mode = evt.value // Since it from a device lets take the value directly
-    if (keypads && directControl) {
+    def keypads = locks?.findAll{ it.hasAttribute("armMode") } // Get all keypads and sync state with ADT
+    // We don't check for individual user custom actions for keypads since synchronization needs to happen at the keypad level
+    keypads = (settings."individualDoorActions${""}" ? keypads.findAll { keypad -> (settings."keypadArmDisarm${keypad}${""}" != false) } : (settings."keypadArmDisarm${""}${""}" != false ? keypads : null)) // Get keypads with direct control enabled
+    def mode = settings."adtDevices"?.currentState("securitySystemStatus")?.value // This should the new ADT state
+    if (keypads) {
         switch (mode) {
             case "armedAway":
                 msg = "Detected ADT mode change, setting $keypads to Armed Away"
@@ -864,15 +874,14 @@ def adtChangeHandler(evt) {
 
 // Handle changes to SHM states
 def shmChangeHandler(evt) {
-    log.trace "SHM state change notification, name: ${evt.name}, value: ${evt.value}"
+    log.trace "SHM state change notification, name: ${evt?.name}, value: ${evt?.value}"
 
     def msg = ""
-    def keypads = locks?.findAll{ lock -> lock.hasAttribute("armMode")} // Get all keypads and sync state with SHM
-    def user = "" // We don't check for individual user custom actions for keypads since synchronization needs to happen at the keypad level
-    def directControl = (settings."individualDoorActions${user}" ? keypads : [ "" ]).any { lock -> (settings."keypadArmDisarm${lock}${user}" != false) }
-    //def mode = location.currentState("alarmSystemStatus")?.value // This should the new SHM state
-    def mode = evt.value // This is the changed value
-    if (keypads && directControl) {
+    def keypads = locks?.findAll{ it.hasAttribute("armMode") } // Get all keypads and sync state with SHM
+    // We don't check for individual user custom actions for keypads since synchronization needs to happen at the keypad level
+    keypads = (settings."individualDoorActions${""}" ? keypads.findAll { keypad -> (settings."keypadArmDisarm${keypad}${""}" != false) } : (settings."keypadArmDisarm${""}${""}" != false ? keypads : null)) // Get keypads with direct control enabled
+    def mode = location.currentState("alarmSystemStatus")?.value // This should the new SHM state
+    if (keypads) {
         switch (mode) {
             case "away":
                 msg = "Detected SHM mode change, setting $keypads to Armed Away"
@@ -1087,15 +1096,21 @@ def notifyOpenDoor() {
                 notifyOpenDoors.remove(lock.id) // We are done with this lock, remove it from the list
                 atomicState.notifyOpenDoors = notifyOpenDoors // set it back to atomicState
             } else {
-                log.info "Sensor ${lockSensor} is reporting door ${lock} is open, notifying user and checking again after ${settings."openNotifyTimeout${lock}"} minutes"
+                log.info "Sensor ${lockSensor} is reporting door ${lock} is open, notifying user${settings."openNotifyRepeat${lock}" ? " and checking again after ${settings."openNotifyTimeout${lock}"} minutes" : ""}"
                 def msg = "$lockSensor has been open for ${settings."openNotifyTimeout${lock}"} minutes"
 
                 //log.trace "Updating ${lock.id} timestamp in the list of notifyOpenDoors"
                 def notifyOpenDoors = atomicState.notifyOpenDoors // We need to deference the atomicState object each time, https://community.smartthings.com/t/atomicstate-not-working/27827/6?u=rboy
-                notifyOpenDoors[lock.id] = now() // Atomic to ensure we get upto date info here
+                if (settings."openNotifyRepeat${lock}") {
+                    notifyOpenDoors[lock.id] = now() // Atomic to ensure we get upto date info here
+                } else {
+                    notifyOpenDoors.remove(lock.id) // We are done with this lock, remove it from the list
+                }
                 atomicState.notifyOpenDoors = notifyOpenDoors // set it back to atomicState
 
-                startTimer(60, notifyOpenDoor) // Check back again after short timeout so we don't overwrite a short wait with a long wait
+                if (settings."openNotifyRepeat${lock}") {
+                    startTimer(60, notifyOpenDoor) // Check back again after short timeout so we don't overwrite a short wait with a long wait
+                }
                 sendNotifications(msg) // Do it in the end to avoid a timeout
             }
         } else {
@@ -1119,7 +1134,7 @@ def lockHandler(evt) {
     
     log.trace "Lock event name $evt.name, value $evt.value, device $evt.displayName, description $evt.descriptionText, data $evt.data"
 
-    def evtMap = [name:evt.name, value:evt.value, displayName:evt.displayName, descriptionText:evt.descriptionText, data:evt.data, lockId: evt.device.id]
+    def evtMap = [name:evt.name, value:evt.value, displayName:evt.displayName, descriptionText:evt.descriptionText, data:evt.data, lockId: evt.device.id] // NOTE: Bug with ST, runIn passes a JSONObject instead of a map - https://community.smartthings.com/t/runin-json-vs-map/104442 so convert evt to a standard map and also we can't pass evt object to runIn
 
     if (evt.name == "lock") { // LOCK UNLOCK EVENTS
         if (evt.value == "unlocked") { // UNLOCKED
@@ -1138,11 +1153,11 @@ def lockHandler(evt) {
         }
     } else if (evt.name == "invalidCode") { // INVALID LOCK CODE EVENT
         log.debug "Lock $evt.displayName, invalid user code: ${evt.value}"
-        def msg = "Too many invalid user codes detected on lock $evt.displayName"
+        def msg = "Invalid user code detected on $evt.displayName"
         sendNotifications(msg)
     } else if (evt.name == "tamper" && evt.value == "detected") { // Tampering of the lock
         log.debug "Lock $evt.displayName tamper detected with description $evt.descriptionText"
-        def msg = "Tampering detected on lock $evt.displayName. ${evt.descriptionText ?: ""}"
+        def msg = "Tampering detected on $evt.displayName. ${evt.descriptionText ?: ""}"
         sendNotifications(msg)
     }
 }
@@ -1172,6 +1187,9 @@ def processUnlockEvent(evt) {
     if (evt.data) { // Was it unlocked using a code
         data = parseJson(evt.data)
     }
+    
+    def user = (data?.usedCode as String) ?: ((data?.codeId as String) ?: "") // get the user if present
+    def i = (data?.usedCode as Integer) ?: ((data?.codeId as Integer) ?: 0) // get the user if present
     def lockMode = data?.type ?: (data?.method ?: (evt.descriptionText?.contains("manually") ? "manually" : "electronically"))
     // Fix for proper grammar
     switch (lockMode) {
@@ -1204,7 +1222,7 @@ def processUnlockEvent(evt) {
             break
     }
 
-    if ((data?.usedCode == null) && !(["keypad", "rfid"].any { lockMode?.toLowerCase().contains(it) })) { // No extended data, must be a manual/auto/keyed unlock, NOTE: some locks don't send keypad user codes
+    if (!user && !(["keypad", "rfid"].any { lockMode?.toLowerCase().contains(it) })) { // No extended data, must be a manual/auto/keyed unlock, NOTE: some locks don't send keypad user codes
         log.trace "$evt.displayName was unlocked manually. Source type: $lockMode"
 
         // Check if we have individual actions for each lock
@@ -1228,7 +1246,7 @@ def processUnlockEvent(evt) {
                 sendLocationEvent(name: "alarmSystemStatus", value: "off") // First do this to avoid false alerts from a slow platform
                 msg += detailedNotifications ? ", disarming Smart Home Monitor" : ""
             }
-
+            
             try {
                 if (settings."adtDisarmManual${lockStr}" && settings."adtDevices") {
                     log.info "Disarming ADT"
@@ -1251,7 +1269,7 @@ def processUnlockEvent(evt) {
             }
 
             if (settings."homePhraseManual${lockStr}") {
-                log.info "Running unlock Phrase ${settings."homePhraseManual${lockStr}"}"
+                log.info "$evt.displayName was unlocked successfully, running routine ${settings."homePhraseManual${lockStr}"}"
                 location.helloHome.execute(settings."homePhraseManual${lockStr}") // First do this to avoid false alerts from a slow platform
                 msg += detailedNotifications ? ", running routine ${settings."homePhraseManual${lockStr}"}" : ""
             }
@@ -1289,14 +1307,13 @@ def processUnlockEvent(evt) {
                 log.info "$evt.displayName was unlocked successfully, opening ${settings."openGarageManual${lockStr}"}"
                 settings."openGarageManual${lockStr}"?.open()
                 msg += detailedNotifications ? ", opening ${settings."openGarageManual${lockStr}"}" : ""
-            }	    
+            }
 
             if (settings."manualNotify${lockStr}" && (settings."manualNotifyModes${lockStr}" ? settings."manualNotifyModes${lockStr}".find{it == location.mode} : true)) {
                 sendNotifications(msg)
             }
         }
     } else { // KEYPAD / RFID UNLOCK
-        Integer i = data.usedCode as Integer
         def name = settings."userNames${i}"
         def notify = settings."userNotify${i}"
         def notifyCount = settings."userNotifyUseCount${i}"
@@ -1310,6 +1327,7 @@ def processUnlockEvent(evt) {
         if (i == 0) {
             name = "Master Code" // Special case locks like Yale have a master code which isn't programmable and is code 0
             notify = true // always inform about master users
+            user = "" // Master code uses general actions
         }
 
         if (!name) { // will handle usedCode null errors
@@ -1320,10 +1338,9 @@ def processUnlockEvent(evt) {
         }
 
         // Check if we have user override unlock actions defined
-        def user = ""
-        if (settings."userOverrideUnlockActions${i as String}") {
-            log.trace "Found per user unlock actions"
-            user = i as String
+        if (!settings."userOverrideUnlockActions${i as String}") {
+            log.trace "Did not find per user unlock actions, falling back to general actions"
+            user = ""
         }
 
         // Check if we have individual actions for each lock
@@ -1341,7 +1358,7 @@ def processUnlockEvent(evt) {
             log.trace "Current mode is ${location.mode}, not running unlock actions for door $lock"
         } else {
             // If we have a specific mode passed by the keypad lets use that otherwise use configured options
-            if ((settings."keypadArmDisarm${lockStr}${user}" != false) && (data instanceof org.codehaus.groovy.grails.web.json.JSONObject ? !data?.isNull("armMode") : (data?.armMode != null))) { // NOTE: Bug with ST, runIn passes a JSONObject instead of a map - https://community.smartthings.com/t/runin-json-vs-map/104442
+            if ((settings."keypadArmDisarm${lockStr}${user}" != false) && data?.armMode) {
                 switch (data.armMode) { // Set Keypad lock state
                     case "disarmed":
                     	log.info "Disarming Smart Home Monitor"
@@ -1352,6 +1369,9 @@ def processUnlockEvent(evt) {
                                 log.info "Disarming ADT"
                                 settings."adtDevices"?.disarm() // First do this to avoid false alerts from a slow platform
                                 msg += detailedNotifications ? ", disarming ADT" : ""
+                                startTimer(1, adtChangeHandler) // If this came from a keypad and direct control for ADT is enabled, then refresh the keypad state (incase exit code beeping needs to be cancelled)
+                            } else {
+                                startTimer(1, shmChangeHandler) // If this came from a keypad and direct control for SHM is enabled, then refresh the keypad state (incase exit code beeping needs to be cancelled)
                             }
                         } catch (e) { // This is still not official so lets be cautious about it
                             log.error "Error disarming ADT\n$e"
@@ -1394,7 +1414,7 @@ def processUnlockEvent(evt) {
             }
 
             if (settings."homePhrase${lockStr}${user}") {
-                log.info "Running unlock Phrase ${settings."homePhrase${lockStr}${user}"}"
+                log.info "$evt.displayName was unlocked successfully, running routine ${settings."homePhrase${lockStr}${user}"}"
                 location.helloHome.execute(settings."homePhrase${lockStr}${user}") // First do this to avoid false alerts from a slow platform
                 msg += detailedNotifications ? ", running routine ${settings."homePhrase${lockStr}${user}"}" : ""
             }
@@ -1432,7 +1452,7 @@ def processUnlockEvent(evt) {
                 log.info "$evt.displayName was unlocked successfully, opening ${settings."openGarage${lockStr}${user}"}"
                 settings."openGarage${lockStr}${user}"?.open()
                 msg += detailedNotifications ? ", opening ${settings."openGarage${lockStr}${user}"}" : ""
-            }	    
+            }
         }
 
         // Send notifications
@@ -1460,7 +1480,7 @@ def processLockEvent(evt) {
     def lockStr = "" // Individual lock actions
     def user = "" // User slot used
     def i = 0 // Slot used
-
+    
     if (evt.data) { // Was it locked using a user code
         data = parseJson(evt.data)
     }
@@ -1498,8 +1518,8 @@ def processLockEvent(evt) {
 
     evt.lockMode = lockMode // Save the lockMode calculated
     evt.data = data // Update the data to be passed
-    user = (data?.usedCode as String) ?: "" // get the user if present
-    i = (data?.usedCode as Integer) ?: 0 // get the user if present
+    user = (data?.usedCode as String) ?: ((data?.codeId as String) ?: "") // get the user if present
+    i = (data?.usedCode as Integer) ?: ((data?.codeId as Integer) ?: 0) // get the user if present
     log.trace "$lock locked by user $user $lockMode"
 
     // Check if we have user override unlock actions defined
@@ -1515,15 +1535,53 @@ def processLockEvent(evt) {
         lockStr = ""
     }
 
-    if ((["keypad", "rfid"].any { lockMode?.toLowerCase().contains(it) }) || (data?.usedCode != null)) { // LOCKED VIA KEYPAD/RFID
-        def name = user ? (i == 0 ? "Master Code" : (settings."userNames${i}" ?: "Unknown user")) : "" // Should have a name for the user otherwise it's unknown, 0 is Master Code
-        
+    if ((["keypad", "rfid"].any { lockMode?.toLowerCase().contains(it) }) || user) { // LOCKED VIA KEYPAD/RFID
         // Check if we have a delayed action and process accordingly
         if (settings."delayLockActionsTime${lockStr}${user}") {
-            def msg = "$evt.displayName was locked ${name ? "by " + name + " " : ""}$lockMode, running actions in ${settings."delayLockActionsTime${lockStr}${user}"} minutes" // Default message to send
+            def name, notify, notifyCount, notifyModes, notifyXPresence, extLockNotify, extLockNotifyModes
+            if (user) {
+                if (i == 0) {
+                    name = "Master Code" // Special case locks like Yale have a master code which isn't programmable and is code 0
+                    notify = true // always inform about master users
+                    user = "" // Master code uses general actions
+                } else {
+                    name = settings."userNames${i}" ?: "Unknown user" // Should have a name for the user otherwise it's unknown
+                    notify = settings."userNotify${i}"
+                    notifyCount = settings."userNotifyUseCount${i}"
+                    notifyModes = settings."userNotifyModes${i}"
+                    notifyXPresence = settings."userXNotifyPresence${i}"
+                }
+            } else {
+                log.trace "No usercode found in extended data for external user lock"
+            }
+
+            extLockNotify = settings."externalLockNotify${lockStr}"
+            extLockNotifyModes = settings."externalLockNotifyModes${lockStr}"
+
+            def msg = "$evt.displayName was locked ${name ? "by " + name + " " : ""}$lockMode, checking for actions in ${settings."delayLockActionsTime${lockStr}${user}"} minutes" // Default message to send
             log.debug msg
-            msgs << msg
+            if ((notify && (
+                    (notifyModes ? notifyModes?.find{it == location.mode} : true) &&
+                    (notifyXPresence ? notifyXPresence.every{it.currentPresence != "present"} : true)
+                ) && (
+                    !i || (notifyCount ? (state.codeUseCount[lock.id][i as String] <= notifyCount) : true)
+            )) ||
+                (!i && extLockNotify && (extLockNotifyModes ? extLockNotifyModes.find{it == location.mode} : true))) {
+                msgs << msg
+            }
             evt.sendNotifications = true // Since it's delayed we request notifications be sent
+            // If this came from a keypad and direct control for SHM is enabled, then start an exit code beep for all keypads with direct control
+            if (data?.armMode) {
+                if (settings."keypadArmDisarm${lock}${""}" != false) { // If this keypad has direct control enabled
+                    def keypads = locks?.findAll{ it.hasAttribute("armMode") } // Get all keypads and sync state with SHM
+                    // We don't check for individual user custom actions for keypads since synchronization needs to happen at the keypad level
+                    keypads = (settings."individualDoorActions${""}" ? keypads.findAll { keypad -> (settings."keypadArmDisarm${keypad}${""}" != false) } : (settings."keypadArmDisarm${""}${""}" != false ? keypads : null)) // Get keypads with direct control enabled
+                    if (keypads) {
+                        log.trace "Direct SHM controls enabled, starting exit delay beeping for $keypads"
+                        keypads*.setExitDelay(settings."delayLockActionsTime${lockStr}${user}" * 60) // Start exit delay beeping for delayed actions with direct control enabled
+                    }
+                }
+            }
             startTimer(settings."delayLockActionsTime${lockStr}${user}" * 60, processLockActions, evt)
         } else {
             msgs += processLockActions(evt) // Take the message back to send out
@@ -1531,9 +1589,11 @@ def processLockEvent(evt) {
     } else { // MANUAL LOCK
         // Check if we have a delayed action and process accordingly
         if (settings."delayLockActionsTimeManual${lockStr}") {
-            def msg = "$evt.displayName was locked $lockMode, running actions in ${settings."delayLockActionsTimeManual${lockStr}"} minutes" // Default message to send
+            def msg = "$evt.displayName was locked $lockMode, checking for actions in ${settings."delayLockActionsTimeManual${lockStr}"} minutes" // Default message to send
             log.debug msg
-            msgs << msg
+            if (settings."lockNotify${lockStr}" && (!(["keypad", "rfid"].any { lockMode?.toLowerCase().contains(it) })) && (settings."lockNotifyModes${lockStr}" ? settings."lockNotifyModes${lockStr}".find{it == location.mode} : true)) {
+                msgs << msg
+            }
             evt.sendNotifications = true // Since it's delayed we request notifications be sent
             startTimer(settings."delayLockActionsTimeManual${lockStr}" * 60, processLockActions, evt)
         } else {
@@ -1575,23 +1635,21 @@ def processLockActions(evt) {
     def lock = locks.find { it.id == evt.lockId }
     def msgs = [] // Message to send
     def lockMode = evt.lockMode
-    def user = ""
     def arm = "" // Security keypad arm mode (optional)
-    def i = 0
+    def user = (data?.usedCode as String) ?: ((data?.codeId as String) ?: "") // get the user if present
+    def i = (data?.usedCode as Integer) ?: ((data?.codeId as Integer) ?: 0) // get the user if present
 
     log.trace "Processing $lock lock actions: $evt"
 
-    if ((["keypad", "rfid"].any { lockMode?.toLowerCase().contains(it) }) || (data?.usedCode != null)) { // LOCKED VIA KEYPAD/RFID
+    if ((["keypad", "rfid"].any { lockMode?.toLowerCase().contains(it) }) || user) { // LOCKED VIA KEYPAD/RFID
         def name, notify, notifyCount, notifyModes, notifyXPresence, extLockNotify, extLockNotifyModes, userOverrideActions
 
-        if ((data instanceof org.codehaus.groovy.grails.web.json.JSONObject ? !data?.isNull("usedCode") : (data?.usedCode != null)) && (data?.usedCode >= 0)) { // NOTE: Bug with ST, runIn passes a JSONObject instead of a map - https://community.smartthings.com/t/runin-json-vs-map/104442
-            i = data.usedCode as Integer
-
+        if (user) {
             if (i == 0) {
                 name = "Master Code" // Special case locks like Yale have a master code which isn't programmable and is code 0
                 notify = true // always inform about master users
+                user = "" // Master code uses general actions
             } else {
-                user = i as String
                 name = settings."userNames${i}" ?: "Unknown user" // Should have a name for the user otherwise it's unknown
                 notify = settings."userNotify${i}"
                 notifyCount = settings."userNotifyUseCount${i}"
@@ -1601,8 +1659,8 @@ def processLockActions(evt) {
 
                 // Check if we have user override lock actions defined
                 if (!userOverrideActions) {
-                    log.trace "No user $name specific lock action found, falling back to global actions"
-                    user = "" // We don't have a user specific action defined, fall back to global actions
+                    log.trace "No user $name specific lock action found, falling back to general actions"
+                    user = "" // We don't have a user specific action defined, fall back to general actions
                 }
             }
         } else {
@@ -1622,7 +1680,7 @@ def processLockActions(evt) {
 
         log.trace "Lock $evt.displayName locked by $name, user notify $notify, notify count: $notifyCount, user notify modes $notifyModes, notify NOT present $notifyXPresence, external notify $extLockNotify, external notify modes $extLockNotifyModes, user override action $userOverrideActions, Source type: $lockMode"
 
-        def msg = evt.sendNotifications ? "Completing lock actions for $evt.displayName" : "$evt.displayName was locked ${name ? "by " + name + " " : ""}$lockMode" // Default message to send
+        def msg = evt.sendNotifications ? "Completing check for lock actions for $evt.displayName" : "$evt.displayName was locked ${name ? "by " + name + " " : ""}$lockMode" // Default message to send
 
         if (settings."runXPeopleLockActions${lockStr}${user}"?.find{it.currentPresence == "present"}) {
             log.trace "${settings."runXPeopleLockActions${lockStr}${user}"?.find{it.currentPresence == "present"}} is present, not running lock actions for door $lock"
@@ -1630,7 +1688,7 @@ def processLockActions(evt) {
             log.trace "Current mode is ${location.mode}, not running lock actions for door $lock"
         } else {
             // If we have a specific mode passed by the keypad lets use that otherwise use configured options
-                        if (data instanceof org.codehaus.groovy.grails.web.json.JSONObject ? !data?.isNull("armMode") : (data?.armMode != null)) { // NOTE: Bug with ST, runIn passes a JSONObject instead of a map - https://community.smartthings.com/t/runin-json-vs-map/104442
+            if (data?.armMode) {
                 switch (data.armMode) { // Check for custom keypad arm actions
                     case "armedStay":
                     	if (settings."keypadArmActions${lockStr}${user}${"stay"}") {
@@ -1660,7 +1718,7 @@ def processLockActions(evt) {
                 }
             }
 
-            if ((settings."keypadArmDisarm${lockStr}${user}" != false) && (data instanceof org.codehaus.groovy.grails.web.json.JSONObject ? !data?.isNull("armMode") : (data?.armMode != null))) { // NOTE: Bug with ST, runIn passes a JSONObject instead of a map - https://community.smartthings.com/t/runin-json-vs-map/104442
+            if ((settings."keypadArmDisarm${lockStr}${user}" != false) && data?.armMode) {
                 switch (data.armMode) { // Set Keypad lock state
                     case "armedStay":
                     case "armedNight":
@@ -1683,7 +1741,7 @@ def processLockActions(evt) {
                     	log.info "Arming Smart Home Monitor to Away"
                         sendLocationEvent(name: "alarmSystemStatus", value: "away")
                         msg += detailedNotifications ? ", Arming Smart Home Monitor to Away" : ""
-                    	try {
+                        try {
                             if (settings."adtDevices") {
                                 log.info "Arming ADT to Away"
                                 settings."adtDevices"?.armAway('armedAway')
@@ -1742,7 +1800,7 @@ def processLockActions(evt) {
             }
 
             if (settings."externalLockPhrase${lockStr}${user}${arm}") {
-                log.info "Running $lock specific locked Phrase ${settings."externalLockPhrase${lockStr}${user}${arm}"} for ${name ?: "external lock"}"
+                log.info "$evt.displayName was locked successfully, running routine ${settings."externalLockPhrase${lockStr}${user}${arm}"}"
                 location.helloHome.execute(settings."externalLockPhrase${lockStr}${user}${arm}")
                 msg += detailedNotifications ? ", running ${settings."externalLockPhrase${lockStr}${user}${arm}"}" : ""
             } else {
@@ -1798,7 +1856,7 @@ def processLockActions(evt) {
             lockStr = ""
         }
 
-        def msg = evt.sendNotifications ? "Completing lock actions for $evt.displayName" : "$evt.displayName was locked $lockMode" // Default message to send
+        def msg = evt.sendNotifications ? "Completing check for lock actions for $evt.displayName" : "$evt.displayName was locked $lockMode" // Default message to send
 
         if (settings."runXPeopleLockActionsManual${lockStr}"?.find{it.currentPresence == "present"}) {
             log.trace "${settings."runXPeopleLockActionsManual${lockStr}"?.find{it.currentPresence == "present"}} is present, not running lock actions for door $lock"
@@ -1833,7 +1891,7 @@ def processLockActions(evt) {
             }
 
             if (settings."externalLockPhraseManual${lockStr}") {
-                log.info "Running $lock specific locked Phrase ${settings."externalLockPhraseManual${lockStr}"} for ${name ?: "external lock"}"
+                log.info "$evt.displayName was locked successfully, running routine ${settings."externalLockPhraseManual${lockStr}"}"
                 location.helloHome.execute(settings."externalLockPhraseManual${lockStr}")
                 msg += detailedNotifications ? ", running ${settings."externalLockPhraseManual${lockStr}"}" : ""
             } else {
@@ -1912,9 +1970,13 @@ def startTimer(seconds, function, dataMap = null) {
 
 private void sendText(number, message) {
     if (number) {
-        def phones = number.split("\\*")
+        def phones = number.replaceAll("[;,#]", "*").split("\\*") // Some users accidentally use ;,# instead of * and ST can't handle *,#+ in the number except for + at the beginning
         for (phone in phones) {
-            sendSms(phone, message)
+            try {
+                sendSms(phone, message)
+            } catch (Exception e) {
+                sendPush "Invalid phone number $phone"
+            }
         }
     }
 }
@@ -1936,8 +1998,21 @@ private void sendNotifications(message, user = "") {
             sendText(settings."sms${user}", message)
         }
     }
-    if (settings."audioDevices${user}") {
-        settings."audioDevices${user}"*.playTextAndResume(message)
+
+    settings."audioDevices${user}"?.each { audioDevice -> // Play audio notifications
+        if (audioDevice.hasCommand("playText")) { // Check if it supports TTS
+            if (audioVolume) { // Only set volume if defined as it also resumes playback
+                audioDevice.playTextAndResume(message, audioVolume)
+            } else {
+                audioDevice.playText(message)
+            }
+        } else {
+            if (audioVolume) { // Only set volume if defined as it also resumes playback
+                audioDevice.playTrackAndResume(textToSpeech(message)?.uri, audioVolume) // No translations at this time
+            } else {
+                audioDevice.playTrack(textToSpeech(message)?.uri) // No translations at this time
+            }
+        }
     }
 }
 
