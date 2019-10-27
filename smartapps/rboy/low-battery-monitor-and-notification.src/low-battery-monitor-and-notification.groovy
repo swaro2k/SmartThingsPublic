@@ -21,13 +21,15 @@
 */ 
 
 def clientVersion() {
-    return "01.03.03"
+    return "01.05.00"
 }
 
 /**
  *  Low Battery Monitor and Notification
  *
  * Copyright RBoy Apps, redistribution of any changes or code is not allowed without permission
+ * 2019-10-16 - (v01.05.00) Added support for day of week selection, improved settings update reliability/performance
+ * 2019-10-11 - (v01.04.00) Add support for the new Sonos integration (auto detect)
  * 2019-06-24 - (v01.03.03) Don't resume playback if no audio volume is specified
  * 2019-06-07 - (v01.03.02) Added support for silent push, sanity checking for multiple SMS
  * 2019-02-28 - (v01.03.01) Show invalid battery as unknown instead of null
@@ -52,9 +54,23 @@ preferences {
     page(name: "newMonitorRulePage")
 }
 
+private getSchedulingOptions() {
+    [
+        "${Calendar.MONDAY}${Calendar.TUESDAY}${Calendar.WEDNESDAY}${Calendar.THURSDAY}${Calendar.FRIDAY}${Calendar.SATURDAY}${Calendar.SUNDAY}": 'All Week',
+        "${Calendar.MONDAY}${Calendar.TUESDAY}${Calendar.WEDNESDAY}${Calendar.THURSDAY}${Calendar.FRIDAY}": 'Monday to Friday',
+        "${Calendar.SATURDAY}${Calendar.SUNDAY}": 'Saturday & Sunday',
+        "${Calendar.MONDAY}": 'Monday',
+        "${Calendar.TUESDAY}": 'Tuesday',
+        "${Calendar.WEDNESDAY}": 'Wednesday',
+        "${Calendar.THURSDAY}": 'Thursday',
+        "${Calendar.FRIDAY}": 'Friday',
+        "${Calendar.SATURDAY}": 'Saturday',
+        "${Calendar.SUNDAY}": 'Sunday'
+    ]
+}
 
 def setupAppPage() {
-    log.trace "Settings $settings"
+    log.trace "Settings $settings\nDOW Options: ${schedulingOptions.inspect()}"
 
     dynamicPage(name: "setupAppPage", title: "Low Battery Monitor and Notification v${clientVersion()}", install: true, uninstall: true) {    
         if (!atomicState.rules) {
@@ -78,12 +94,15 @@ def setupAppPage() {
                     atomicState.rules = rules
                     log.info "Deleted rule ${rule.index}"
                     // Now get rid of the rules in the settings
-                    deleteSetting("batteryUpper${rule.index}")
-                    deleteSetting("monitorDevices${rule.index}")
-                    deleteSetting("monitorDevicesReporting${rule.index}")
-                    deleteSetting("monitorDevicesReportingDays${rule.index}")
-                    deleteSetting("deleteRule${rule.index}")
-                    deleteSetting("name${rule.index}")
+                    def map = [
+                        "batteryUpper${rule.index}",
+                        "monitorDevices${rule.index}",
+                        "monitorDevicesReporting${rule.index}",
+                        "monitorDevicesReportingDays${rule.index}",
+                        "deleteRule${rule.index}",
+                        "name${rule.index}",
+                    ]
+                    deleteSettings(map)
                     log.trace "Updated Settings $settings"
                     log.trace "Updated Rules " + atomicState.rules
                 } else { // Otherwise show it
@@ -103,6 +122,7 @@ def setupAppPage() {
 
         section("Notification Options") {
             input "time", "time", title: "Check battery levels at this time everyday", required: true, image: "http://www.rboyapps.com/images/Time.png"
+            input "dayOfWeek", "enum", title: "Which day of the week?", description: "Everyday", required: false, multiple: true, options: schedulingOptions
             input "audioDevices", "capability.audioNotification", title: "Speak notifications on", required: false, multiple: true, submitOnChange: true, image: "http://www.rboyapps.com/images/Horn.png"
             if (audioDevices) {
                 input "audioVolume", "number", title: "...at this volume level (optional)", description: "keep current", required: false, range: "1..100"
@@ -252,12 +272,12 @@ def initialize() {
     Integer randomDayOfWeek = random.nextInt(7-1) + 1 // 1 to 7
     schedule("0 0 " + randomHour + " ? * " + randomDayOfWeek, checkForCodeUpdate) // Check for code updates once a week at a random day and time between 10am and 6pm
 
-    checkBatteryLevels() // Do it now for sanity check
+    checkBatteryLevels(true) // Do it now for sanity check
 }
 
 def appTouchMethod(evt) {
     log.debug "User requested battery level check"
-    checkBatteryLevels()
+    checkBatteryLevels(true)
 }
 
 def batteryEventHandler(evt) {
@@ -270,8 +290,8 @@ def batteryEventHandler(evt) {
     //log.debug atomicState.batteryEvents
 }
 
-def checkBatteryLevels() {
-    log.trace "Checking battery levels"
+def checkBatteryLevels(force = false) {
+    log.trace "Checking battery levels, force: $force"
 
     // Check if the user has upgraded the SmartApp and reinitailize if required
     if (state.clientVersion != clientVersion()) {
@@ -290,6 +310,15 @@ def checkBatteryLevels() {
         sendPush msg
     }
 
+    // Check if any day of week was selected to check levels and we're not forced
+    Calendar localCalendar = Calendar.getInstance(timeZone)
+    int currentDayOfWeek = localCalendar.get(Calendar.DAY_OF_WEEK)
+    log.warn "Current DOW: ${currentDayOfWeek as String}\nDOW: ${dayOfWeek}"
+    if (!force && dayOfWeek && !dayOfWeek.any { it.contains(currentDayOfWeek as String) }) {
+        log.trace "Skipping check today ($currentDayOfWeek) isn't part of the day of week checking schedule: $dayOfWeek"
+        return
+    }
+    
     for (rule in atomicState.rules) {
         def upper = settings."batteryUpper${rule.index}" as Integer
         def devices = settings."monitorDevices${rule.index}"
@@ -358,21 +387,37 @@ private void sendNotifications(message) {
             sendText(sms, message)
         }
     }
-    if (audioDevices) {
-        audioDevices*.playTextAndResume(message.replace("%", "percent"), audioVolume)
-        if (audioVolume) { // Only set volume if defined as it also resumes playback
-            audioDevices*.playTextAndResume(message.replace("%", "percent"), audioVolume)
+    
+    audioDevices?.each { audioDevice -> // Play audio notifications
+        if (audioDevice.hasCommand("playText")) { // Check if it supports TTS
+            if (audioVolume) { // Only set volume if defined as it also resumes playback
+                audioDevice.playTextAndResume(message.replace("%", "percent"), audioVolume)
+            } else {
+                audioDevice.playText(message.replace("%", "percent"))
+            }
         } else {
-            audioDevices*.playText(message.replace("%", "percent"))
+            if (audioVolume) { // Only set volume if defined as it also resumes playback
+                audioDevice.playTrackAndResume(textToSpeech(message.replace("%", "percent"))?.uri, audioVolume) // No translations at this time
+            } else {
+                audioDevice.playTrack(textToSpeech(message.replace("%", "percent"))?.uri) // No translations at this time
+            }
         }
     }
 }
 
-// Temporarily override the user settings
+// Override the user settings
 // Update a single setting
 private updateSetting(name, value) {
     app.updateSetting(name, value) // For SmartApps UI - THIS IS A VERY SLOW TRANSACTION as it writes directly to the DB
     settings[name] = value // For Device Handlers and SmartApps - much faster but only works on uninitialized value (once the user updates it this approach won't work)
+}
+
+// Update multiple settings passed in a map
+private updateSettings(map) {
+    app.updateSettings(map)
+    map.each { name, value -> // Force the DB to reload new values
+        settings[name] = value
+    }
 }
 
 // Delete a single setting
@@ -381,6 +426,16 @@ private deleteSetting(name) {
     //settings.remove(name) // For Device Handlers
     app.updateSetting(name, '') // For SmartApps - THIS IS A VERY SLOW TRANSACTION as it writes directly to the DB (don't mix app and settings approach or it causes corruption)
     settings[name] = '' // For Device Handlers and SmartApps - much faster but only works on uninitialized value (once the user updates it this approach won't work)
+}
+
+// Delete multiple settings passed in an array
+private deleteSettings(map) {
+    def mapValues = [:]
+    map.each { mapValues[it] = '' }
+    app.updateSettings(mapValues)
+    map.each { name -> // Force the DB to reload new values
+        settings[name] = '' 
+    }
 }
 
 def checkForCodeUpdate(evt) {
