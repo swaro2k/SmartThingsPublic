@@ -21,13 +21,15 @@
 */ 
 
 def clientVersion() {
-    return "01.05.00"
+    return "01.05.02"
 }
 
 /**
  *  Low Battery Monitor and Notification
  *
  * Copyright RBoy Apps, redistribution of any changes or code is not allowed without permission
+ * 2020-05-04 - (v01.05.02) Try to detect platform outage and prevent code upgrade spam notifications
+ * 2020-01-20 - (v01.05.01) Update icons for broken ST Android app 2.18
  * 2019-10-16 - (v01.05.00) Added support for day of week selection, improved settings update reliability/performance
  * 2019-10-11 - (v01.04.00) Add support for the new Sonos integration (auto detect)
  * 2019-06-24 - (v01.03.03) Don't resume playback if no audio volume is specified
@@ -45,8 +47,8 @@ definition(
     author: "RBoy Apps",
     description: "Monitor devices battery and send notifications when they reach various thresholds",
     category: "Safety & Security",
-    iconUrl: "http://smartthings.rboyapps.com/images/BatteryAlert.png",
-    iconX2Url: "http://smartthings.rboyapps.com/images/BatteryAlert.png"
+    iconUrl: "https://www.rboyapps.com/images/BatteryAlert.png",
+    iconX2Url: "https://www.rboyapps.com/images/BatteryAlert.png"
 )
 
 preferences {
@@ -121,19 +123,19 @@ def setupAppPage() {
         }
 
         section("Notification Options") {
-            input "time", "time", title: "Check battery levels at this time everyday", required: true, image: "http://www.rboyapps.com/images/Time.png"
+            input "time", "time", title: "Check battery levels at this time everyday", required: true, image: "https://www.rboyapps.com/images/Time.png"
             input "dayOfWeek", "enum", title: "Which day of the week?", description: "Everyday", required: false, multiple: true, options: schedulingOptions
-            input "audioDevices", "capability.audioNotification", title: "Speak notifications on", required: false, multiple: true, submitOnChange: true, image: "http://www.rboyapps.com/images/Horn.png"
+            input "audioDevices", "capability.audioNotification", title: "Speak notifications on", required: false, multiple: true, submitOnChange: true, image: "https://www.rboyapps.com/images/Horn.png"
             if (audioDevices) {
                 input "audioVolume", "number", title: "...at this volume level (optional)", description: "keep current", required: false, range: "1..100"
             }
             input("recipients", "contact", title: "Send notifications to", multiple: true, required: false) {
-                input "notify", "bool", title: "Push notifications", required: false, image: "http://www.rboyapps.com/images/PushNotification.png", submitOnChange: true
+                input "notify", "bool", title: "Push notifications", required: false, image: "https://www.rboyapps.com/images/PushNotification.png", submitOnChange: true
                 if (!notify) {
-                    input "silentPush", "bool", title: "Silent notifications", required: false, image: "http://www.rboyapps.com/images/SilentNotification.png"
+                    input "silentPush", "bool", title: "Silent notifications", required: false, image: "https://www.rboyapps.com/images/SilentNotification.png"
                 }
-                input "sms", "phone", title: "Send SMS notification to", required: false, image: "http://www.rboyapps.com/images/Notifications.png"
-                paragraph "You can enter multiple phone numbers by separating them with a '*'. E.g. 5551234567*+448747654321"
+                input "sms", "phone", title: "Send SMS notification to", required: false, image: "https://www.rboyapps.com/images/Notifications.png"
+                paragraph "You can enter multiple phone numbers by separating them with a '*'. E.g. 5551234567*+18747654321"
             }
         }
 
@@ -270,7 +272,7 @@ def initialize() {
     def random = new Random()
     Integer randomHour = random.nextInt(18-10) + 10
     Integer randomDayOfWeek = random.nextInt(7-1) + 1 // 1 to 7
-    schedule("0 0 " + randomHour + " ? * " + randomDayOfWeek, checkForCodeUpdate) // Check for code updates once a week at a random day and time between 10am and 6pm
+    schedule("* 0 " + randomHour + " ? * " + randomDayOfWeek, checkForCodeUpdate) // Check for code updates once a week at a random day and time between 10am and 6pm
 
     checkBatteryLevels(true) // Do it now for sanity check
 }
@@ -294,8 +296,8 @@ def checkBatteryLevels(force = false) {
     log.trace "Checking battery levels, force: $force"
 
     // Check if the user has upgraded the SmartApp and reinitailize if required
-    if (state.clientVersion != clientVersion()) {
-        def msg = "NOTE: ${app.label} detected a code upgrade. Updating configuration, please open the app and click on Save to re-validate your settings"
+    if (state.clientVersion && (state.clientVersion != clientVersion())) { // Check for platform outage (null)
+        def msg = "NOTE: ${app.label} detected a code upgrade. Updating configuration, please open the app and re-validate your settings"
         log.warn msg
         runIn(1, initialize) // Reinitialize the app offline to avoid a loop as appTouch calls codeCheck
         sendNotifications(msg) // Do this in the end as it may timeout
@@ -503,3 +505,4 @@ def checkForCodeUpdate(evt) {
 }
 
 // THIS IS THE END OF THE FILE
+
