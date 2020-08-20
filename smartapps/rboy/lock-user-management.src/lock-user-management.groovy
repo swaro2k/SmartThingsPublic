@@ -20,9 +20,7 @@
 * The user assumes all responsibility for selecting the software and for the results obtained from the use of the software. The user shall bear the entire risk as to the quality and the performance of the software.
 */ 
 
-def clientVersion() {
-    return "07.12.01"
-}
+def clientVersion() { "07.13.06" }
 
 /**
 * Add and remove multiple user codes for locks with Scheduling and notification options and local actions
@@ -30,6 +28,11 @@ def clientVersion() {
 * Copyright RBoy Apps, redistribution or reuse of code is not allowed without permission
 *
 * Change Log:
+* 2020-08-17 - (v07.13.06) Only post one message when locks stop responding
+* 2020-08-11 - (v07.13.05) Detect deleted routines after a migration
+* 2020-08-05 - (v07.13.04) Dont' send code upgrade notifications
+* 2020-07-29 - (v07.13.03) Fix for Door open/close actions when using multiple doors on Android Classic app
+* 2020-07-26 - (v07.13.01) New app/platform improvements
 * 2020-06-22 - (v07.12.01) Optimized page layout for door open/close actions when multiple locks are selected
 * 2020-05-22 - (v07.12.00) Added option to lock/unlock locks for presence users and disabled auto unlock for open doors (security)
 * 2020-05-01 - (v07.11.00) Added option to toggle switches on keypad lock/unlock/arm modes
@@ -198,6 +201,8 @@ definition(
 )
 
 preferences {
+    page(name: "loginPage")
+    page(name: "loginPage2")
     page(name: "setupApp")
     page(name: "usersPage")
     page(name: "notificationsPage")
@@ -244,6 +249,48 @@ private getSchedulingOptions() {
         'Saturday',
         'Sunday'
     ]
+}
+
+def loginPage() {
+    log.trace "Login page"
+    if (!state.loginSuccess && username) {
+        loginCheck()
+    }
+    if (state.loginSuccess) {
+        setupApp()
+    } else {
+        state.sendUpdate = true
+        loginSection("loginPage", "loginPage2")
+    }
+}
+
+def loginPage2() {
+    log.trace "Login page2"
+    if (!state.loginSuccess && username) {
+        loginCheck()
+    }
+    if (state.loginSuccess) {
+        setupApp()
+    } else {
+        state.sendUpdate = true
+        loginSection("loginPage2", "loginPage")
+    }
+}
+
+private loginSection(name, nextPage) {
+    dynamicPage(name: name, title: "Lock User Management v${clientVersion()}", install: state.loginSuccess, uninstall: true, nextPage: state.loginSuccess ? "" : nextPage) {
+        section() {
+            if (state.loginError) {
+                log.warn "Authenticating failed: ${state.loginError}"
+                paragraph title: "Login failed", image: "https://www.rboyapps.com/images/RBoyApps.png", required: true, "${state.loginError}"
+            } else {
+                log.debug "Check authentication credentials, Login: $username"
+                paragraph title: "Login", image: "https://www.rboyapps.com/images/RBoyApps.png", required: false, "Enter your RBoy Apps username\nYou can retrieve your username from www.rboyapps.com lost password page"
+            }
+
+            input name: "username", type: "text", title: "Username", capitalization: "none", submitOnChange: false, required: false
+        }
+    }
 }
 
 def setupApp() {
@@ -312,6 +359,10 @@ def setupApp() {
             }
         }
         
+        section("Confidential", hideable: true, hidden: true) {
+            paragraph("RBoy Apps Username: " + (username?.toLowerCase() ?: "Unlicensed") + (state.loginSuccess ? "" : ", contact suppport"))
+        }
+        
         remove("Uninstall")
     }
 }
@@ -362,7 +413,7 @@ def openCloseDoorPageSummary() {
                         lockId: lock.id, 
                         passed: true 
                     ]
-                    href(name: "openCloseDoor", params: hrefParams, title: "${lock}", page: "openCloseDoorPage", description: doorOpenCloseStatus(lock), required: false, image: "https://www.rboyapps.com/images/DoorOpenClose.png")
+                    href(name: "openCloseDoor${lock}", params: hrefParams, title: "${lock}", page: "openCloseDoorPage", description: doorOpenCloseStatus(lock), required: false, image: "https://www.rboyapps.com/images/DoorOpenClose.png")
                 }
             }
         }
@@ -482,9 +533,6 @@ def unlockLockActionsPage(params) {
         def phrases = location.helloHome?.getPhrases()
         phrases = phrases ? phrases*.label?.sort() - null : [] // Check for null ghost routines
         def showActions = true
-        if (!phrases) {
-            log.warn "No Routines found!!!"
-        }
         section {
             if (user) { // User specific override options
                 paragraph "Enabling custom user actions and notifications will override over the general actions defined on the first page"
@@ -577,9 +625,6 @@ def unlockKeypadActionsPage(params) {
     dynamicPage(name:"unlockKeypadActionsPage", title: "Setup keypad unlock actions for doors" + (user ? " for user $name." : ""), uninstall: false, install: false) {
         def phrases = location.helloHome?.getPhrases()
         phrases = phrases ? phrases*.label?.sort() - null : [] // Check for null ghost routines
-        if (!phrases) { // This should not happen, it should be taken care of in parent page
-            log.warn "No Routines found!!!"
-        }
 
         section ("Door Keypad Unlock Actions${lock ? " for $lock" : ""}") {
             def priorHomePhrase = settings."homePhrase${lock}${user}"
@@ -639,9 +684,6 @@ def unlockManualActionsPage(params) {
     dynamicPage(name:"unlockManualActionsPage", title: "Setup manual unlock actions for doors", uninstall: false, install: false) {
         def phrases = location.helloHome?.getPhrases()
         phrases = phrases ? phrases*.label?.sort() - null : [] // Check for null ghost routines
-        if (!phrases) { // This should not happen, it should be taken care of in parent page
-            log.warn "No Routines found!!!"
-        }
 
         section ("Door Manual Unlock Actions${lock ? " for $lock" : ""}") {
             def priorHomePhrase = settings."homePhraseManual${lock}"
@@ -699,9 +741,6 @@ def armKeypadActionsPage(params) {
     dynamicPage(name:"armKeypadActionsPage", title: "Setup Arm ${arm?.capitalize()} button actions for ${lock ?: "keypad"}" + (user ? " for user $name." : ""), uninstall: false, install: false) {
         def phrases = location.helloHome?.getPhrases()
         phrases = phrases ? phrases*.label?.sort() - null : [] // Check for null ghost routines
-        if (!phrases) { // This should not happen, it should be taken care of in parent page
-            log.warn "No Routines found!!!"
-        }
 
         section {
             input "keypadArmActions${lock}${user}${arm}", "bool", title: "Enable custom actions", required: false, submitOnChange: true
@@ -749,9 +788,6 @@ def lockKeypadActionsPage(params) {
     dynamicPage(name:"lockKeypadActionsPage", title: "Setup keypad lock actions for doors" + (user ? " for user $name." : ""), uninstall: false, install: false) {
         def phrases = location.helloHome?.getPhrases()
         phrases = phrases ? phrases*.label?.sort() - null : [] // Check for null ghost routines
-        if (!phrases) { // This should not happen, it should be taken care of in parent page
-            log.warn "No Routines found!!!"
-        }
 
         section ("Door Keypad Lock Actions${lock ? " for $lock" : ""}") {
             def priorLockPhrase = settings."externalLockPhrase${lock}${user}"
@@ -834,9 +870,6 @@ def lockManualActionsPage(params) {
     dynamicPage(name:"lockManualActionsPage", title: "Setup manual lock actions for doors", uninstall: false, install: false) {
         def phrases = location.helloHome?.getPhrases()
         phrases = phrases ? phrases*.label?.sort() - null : [] // Check for null ghost routines
-        if (!phrases) { // This should not happen, it should be taken care of in parent page
-            log.warn "No Routines found!!!"
-        }
 
         section ("Door Manual Lock Actions${lock ? " for $lock" : ""}") {
             def priorLockPhrase = settings."externalLockPhraseManual${lock}"
@@ -1524,15 +1557,25 @@ private getLockPinLengthDetails(subLocks = locks) {
 }
 
 
+def uninstalled() {
+    log.debug "Uninstall called"
+    authUpdate("uninstall")
+}
 
 def installed() {
     log.debug "Install Settings: $settings"
+    authUpdate("install")
+    state.sendUpdate = false
     state.clearCodes = true // On a fresh install start by clearing all codes to avoid issues
     appTouch()
 }
 
 def updated() {
     log.debug "Update Settings: $settings"
+    if (state.sendUpdate) {
+        authUpdate("update")
+        state.sendUpdate = false
+    }
     if (!state.clearCodes) { // Some bug in the platform, calls updated on install so skip it
         appTouch()
     }
@@ -2328,7 +2371,7 @@ def processUnlockEvent(evt) {
                 msg += detailedNotifications ? ", changing mode to ${settings."homeModeManual${lockStr}"}" : ""
             }
 
-            if (settings."homePhraseManual${lockStr}") {
+            if (settings."homePhraseManual${lockStr}" && location.helloHome?.getPhrases()) {
                 log.info "$evt.displayName was unlocked successfully, running routine ${settings."homePhraseManual${lockStr}"}"
                 location.helloHome.execute(settings."homePhraseManual${lockStr}") // First do this to avoid false alerts from a slow platform
                 msg += detailedNotifications ? ", running routine ${settings."homePhraseManual${lockStr}"}" : ""
@@ -2473,7 +2516,7 @@ def processUnlockEvent(evt) {
                 msg += detailedNotifications ? ", changing mode to ${settings."homeMode${lockStr}${user}"}" : ""
             }
 
-            if (settings."homePhrase${lockStr}${user}") {
+            if (settings."homePhrase${lockStr}${user}" && location.helloHome?.getPhrases()) {
                 log.info "$evt.displayName was unlocked successfully, running routine ${settings."homePhrase${lockStr}${user}"}"
                 location.helloHome.execute(settings."homePhrase${lockStr}${user}") // First do this to avoid false alerts from a slow platform
                 msg += detailedNotifications ? ", running routine ${settings."homePhrase${lockStr}${user}"}" : ""
@@ -2880,7 +2923,7 @@ def processLockActions(evt) {
                 msg += detailedNotifications ? ", changing mode to ${settings."externalLockMode${lockStr}${user}${arm}"}" : ""
             }
 
-            if (settings."externalLockPhrase${lockStr}${user}${arm}") {
+            if (settings."externalLockPhrase${lockStr}${user}${arm}" && location.helloHome?.getPhrases()) {
                 log.info "$evt.displayName was locked successfully, running routine ${settings."externalLockPhrase${lockStr}${user}${arm}"}"
                 location.helloHome.execute(settings."externalLockPhrase${lockStr}${user}${arm}")
                 msg += detailedNotifications ? ", running ${settings."externalLockPhrase${lockStr}${user}${arm}"}" : ""
@@ -2977,7 +3020,7 @@ def processLockActions(evt) {
                 msg += detailedNotifications ? ", changing mode to ${settings."externalLockModeManual${lockStr}"}" : ""
             }
 
-            if (settings."externalLockPhraseManual${lockStr}") {
+            if (settings."externalLockPhraseManual${lockStr}" && location.helloHome?.getPhrases()) {
                 log.info "$evt.displayName was locked successfully, running routine ${settings."externalLockPhraseManual${lockStr}"}"
                 location.helloHome.execute(settings."externalLockPhraseManual${lockStr}")
                 msg += detailedNotifications ? ", running ${settings."externalLockPhraseManual${lockStr}"}" : ""
@@ -3091,7 +3134,7 @@ def codeCheck() {
         def msg = "NOTE: ${app.label} detected a code upgrade. Updating configuration, please open the app and re-validate your settings"
         log.warn msg
         startTimer(1, appTouch) // Reinitialize the app offline to avoid a loop as appTouch calls codeCheck
-        sendNotifications(msg) // Do this in the end as it may timeout
+        //sendPush msg // Do this in the end as it may timeout
         return
     }
     
@@ -3151,13 +3194,14 @@ def codeCheck() {
                 if (!userLocks?.contains(lock.id)) {
                     if (state.lockCodes[lock.id].(user as String)) {
                         if ((state.retryCodeCount[lock.id][user as String] = (state.retryCodeCount[lock.id][user as String] ?: 0) + 1) > (maxRetries + 1)) {
+                            msg = "Retry programming exceeded, user $user ${name ?: ""} deletion not confirmed by lock $lock"
+                            log.warn msg
                             if (state.retryCodeCount[lock.id][user as String] == (maxRetries + 2)) { // Only process it once until reset
                                 extraNotifications = true // We need to inform the user
                             } else {
                                 state.retryCodeCount[lock.id][user as String] = (maxRetries + 3) // Fix it so when maxRetries changes, it'll pick it up
+                                msg = "" // Don't message endlessly
                             }
-                            msg = "Retry programming exceeded, user $user ${name ?: ""} deletion not confirmed by lock $lock"
-                            log.warn msg
                         } else {
                             deleteCode(lock, user)
                             msg = "Requesting $lock to delete unconfigured user $user ${name ?: ""}"
@@ -3169,7 +3213,7 @@ def codeCheck() {
                         startTimer((sendDelay ?: defaultSendDelay), codeCheck) // schedule the next code update after a few seconds otherwise it overloads locks and doesn't work
                         
                         // Last thing to do since it could timeout
-                        extraNotifications ? sendNotifications(msg) : sendNotificationEvent(msg)
+                        (extraNotifications && msg) ? sendNotifications(msg) : sendNotificationEvent(msg)
                         return // We are done here, exit out as we've scheduled the next update
                     } else {
                         log.debug "$lock ${name ?: ""} user $user already unconfigured"
@@ -3221,13 +3265,14 @@ def codeCheck() {
                                 if (doAdd) {
                                     if (state.lockCodes[lock.id].(user as String) != code) { // Only if code has changed
                                         if ((state.retryCodeCount[lock.id][user as String] = (state.retryCodeCount[lock.id][user as String] ?: 0) + 1) > (maxRetries + 1)) {
+                                            msg = "Retry programming exceeded, user $user ${name ?: ""} addition not confirmed by lock $lock"
+                                            log.warn msg
                                             if (state.retryCodeCount[lock.id][user as String] == (maxRetries + 2)) { // Only process it once until reset
                                                 extraNotifications = true // We need to inform the user
                                             } else {
                                                 state.retryCodeCount[lock.id][user as String] = (maxRetries + 3) // Fix it so when maxRetries changes, it'll pick it up
+                                                msg = "" // Don't message endlessly
                                             }
-                                            msg = "Retry programming exceeded, user $user ${name ?: ""} addition not confirmed by lock $lock"
-                                            log.warn msg
                                         } else {
                                             setCode(lock, user, code, name)
                                             log.debug msg
@@ -3238,7 +3283,7 @@ def codeCheck() {
                                         startTimer((sendDelay ?: defaultSendDelay), codeCheck) // schedule the next code update after a few seconds otherwise it overloads locks and doesn't work
 
                                         // Last thing to do since it could timeout
-                                        extraNotifications ? sendNotifications(msg) : sendNotificationEvent(msg)
+                                        (extraNotifications && msg) ? sendNotifications(msg) : sendNotificationEvent(msg)
                                         return // We are done here, exit out as we've scheduled the next update
                                     } else {
                                         if (getCodeName(lock, user) && (getCodeName(lock, user) != name)) { // If the username has changed update it, if it's empty ignore it
@@ -3249,13 +3294,14 @@ def codeCheck() {
                                 } else {
                                     if (state.lockCodes[lock.id].(user as String)) {
                                         if ((state.retryCodeCount[lock.id][user as String] = (state.retryCodeCount[lock.id][user as String] ?: 0) + 1) > (maxRetries + 1)) {
+                                            msg = "Retry programming exceeded, user $user ${name ?: ""} deletion not confirmed by lock $lock"
+                                            log.warn msg
                                             if (state.retryCodeCount[lock.id][user as String] == (maxRetries + 2)) { // Only process it once until reset
                                                 extraNotifications = true // We need to inform the user
                                             } else {
                                                 state.retryCodeCount[lock.id][user as String] = (maxRetries + 3) // Fix it so when maxRetries changes, it'll pick it up
+                                                msg = "" // Don't message endlessly
                                             }
-                                            msg = "Retry programming exceeded, user $user ${name ?: ""} deletion not confirmed by lock $lock"
-                                            log.warn msg
                                         } else {
                                             deleteCode(lock, user)
                                             msg = msg ?: "Requesting $lock to delete user invalid $user ${name ?: ""}"
@@ -3267,7 +3313,7 @@ def codeCheck() {
                                         startTimer((sendDelay ?: defaultSendDelay), codeCheck) // schedule the next code update after a few seconds otherwise it overloads locks and doesn't work
 
                                         // Last thing to do since it could timeout
-                                        extraNotifications ? sendNotifications(msg) : sendNotificationEvent(msg)
+                                        (extraNotifications && msg) ? sendNotifications(msg) : sendNotificationEvent(msg)
                                         return // We are done here, exit out as we've scheduled the next update
                                     } else {
                                         log.debug "$lock User $user $name is already deleted"
@@ -3275,13 +3321,14 @@ def codeCheck() {
                                 }
                             } else if (state.lockCodes[lock.id].(user as String)) { // Code is null but the list shows programmed, i.e. we were asked to explicit send a delete command to the lock
                                 if ((state.retryCodeCount[lock.id][user as String] = (state.retryCodeCount[lock.id][user as String] ?: 0) + 1) > (maxRetries + 1)) {
+                                    msg = "Retry programming exceeded, user $user ${name ?: ""} deletion not confirmed by lock $lock"
+                                    log.warn msg
                                     if (state.retryCodeCount[lock.id][user as String] == (maxRetries + 2)) { // Only process it once until reset
                                         extraNotifications = true // We need to inform the user
                                     } else {
                                         state.retryCodeCount[lock.id][user as String] = (maxRetries + 3) // Fix it so when maxRetries changes, it'll pick it up
+                                        msg = "" // Don't message endlessly
                                     }
-                                    msg = "Retry programming exceeded, user $user ${name ?: ""} deletion not confirmed by lock $lock"
-                                    log.warn msg
                                 } else {
                                     deleteCode(lock, user)
                                     msg = "Requesting $lock to delete user $user ${name ?: ""}"
@@ -3293,7 +3340,7 @@ def codeCheck() {
                                 startTimer((sendDelay ?: defaultSendDelay), codeCheck) // schedule the next code update after a few seconds otherwise it overloads locks and doesn't work
 
                                 // Last thing to do since it could timeout
-                                extraNotifications ? sendNotifications(msg) : sendNotificationEvent(msg)
+                                (extraNotifications && msg) ? sendNotifications(msg) : sendNotificationEvent(msg)
                                 return // We are done here, exit out as we've scheduled the next update
                             } else {
                                 log.debug "$lock ${name ?: ""} user $user already deleted"
@@ -3308,13 +3355,14 @@ def codeCheck() {
                                     }
 
                                     if ((state.retryCodeCount[lock.id][user as String] = (state.retryCodeCount[lock.id][user as String] ?: 0) + 1) > (maxRetries + 1)) {
+                                        msg = "Retry programming exceeded, user $user ${name ?: ""} deletion not confirmed by lock $lock"
+                                        log.warn msg
                                         if (state.retryCodeCount[lock.id][user as String] == (maxRetries + 2)) { // Only process it once until reset
                                             extraNotifications = true // We need to inform the user
                                         } else {
                                             state.retryCodeCount[lock.id][user as String] = (maxRetries + 3) // Fix it so when maxRetries changes, it'll pick it up
+                                            msg = "" // Don't message endlessly
                                         }
-                                        msg = "Retry programming exceeded, user $user ${name ?: ""} deletion not confirmed by lock $lock"
-                                        log.warn msg
                                     } else {
                                         deleteCode(lock, user)
                                         msg = "Requesting $lock to delete one time user $user ${name ?: ""}"
@@ -3326,18 +3374,19 @@ def codeCheck() {
                                     startTimer((sendDelay ?: defaultSendDelay), codeCheck) // schedule the next code update after a few seconds otherwise it overloads locks and doesn't work
 
                                     // Last thing to do since it could timeout
-                                    extraNotifications ? sendNotifications(msg) : sendNotificationEvent(msg)
+                                    (extraNotifications && msg) ? sendNotifications(msg) : sendNotificationEvent(msg)
                                     return // We are done here, exit out as we've scheduled the next update
                                 } else if (!state.trackUsedOneTimeCodes.contains(user as String)) { // If it's not been used add it to the lock
                                     if (state.lockCodes[lock.id].(user as String) != code) { // Only if code has changed
                                         if ((state.retryCodeCount[lock.id][user as String] = (state.retryCodeCount[lock.id][user as String] ?: 0) + 1) > (maxRetries + 1)) {
+                                            msg = "Retry programming exceeded, user $user ${name ?: ""} addition not confirmed by lock $lock"
+                                            log.warn msg
                                             if (state.retryCodeCount[lock.id][user as String] == (maxRetries + 2)) { // Only process it once until reset
                                                 extraNotifications = true // We need to inform the user
                                             } else {
                                                 state.retryCodeCount[lock.id][user as String] = (maxRetries + 3) // Fix it so when maxRetries changes, it'll pick it up
+                                                msg = "" // Don't message endlessly
                                             }
-                                            msg = "Retry programming exceeded, user $user ${name ?: ""} addition not confirmed by lock $lock"
-                                            log.warn msg
                                         } else {
                                             setCode(lock, user, code, name)
                                             msg = "Requesting $lock to add one time user $user ${name ?: ""}, code: $code"
@@ -3349,7 +3398,7 @@ def codeCheck() {
                                         startTimer((sendDelay ?: defaultSendDelay), codeCheck) // schedule the next code update after a few seconds otherwise it overloads locks and doesn't work
 
                                         // Last thing to do since it could timeout
-                                        extraNotifications ? sendNotifications(msg) : sendNotificationEvent(msg)
+                                        (extraNotifications && msg) ? sendNotifications(msg) : sendNotificationEvent(msg)
                                         return // We are done here, exit out as we've scheduled the next update
                                     } else {
                                         if (getCodeName(lock, user) && (getCodeName(lock, user) != name)) { // If the username has changed update it, if it's empty ignore it
@@ -3362,13 +3411,14 @@ def codeCheck() {
                                 }
                             } else if (state.lockCodes[lock.id].(user as String)) { // Code is null but the list shows programmed, i.e. we were asked to explicit send a delete command to the lock
                                 if ((state.retryCodeCount[lock.id][user as String] = (state.retryCodeCount[lock.id][user as String] ?: 0) + 1) > (maxRetries + 1)) {
+                                    msg = "Retry programming exceeded, user $user ${name ?: ""} deletion not confirmed by lock $lock"
+                                    log.warn msg
                                     if (state.retryCodeCount[lock.id][user as String] == (maxRetries + 2)) { // Only process it once until reset
                                         extraNotifications = true // We need to inform the user
                                     } else {
                                         state.retryCodeCount[lock.id][user as String] = (maxRetries + 3) // Fix it so when maxRetries changes, it'll pick it up
+                                        msg = "" // Don't message endlessly
                                     }
-                                    msg = "Retry programming exceeded, user $user ${name ?: ""} deletion not confirmed by lock $lock"
-                                    log.warn msg
                                 } else {
                                     deleteCode(lock, user)
                                     msg = "Requesting $lock to delete user $user ${name ?: ""}"
@@ -3380,7 +3430,7 @@ def codeCheck() {
                                 startTimer((sendDelay ?: defaultSendDelay), codeCheck) // schedule the next code update after a few seconds otherwise it overloads locks and doesn't work
 
                                 // Last thing to do since it could timeout
-                                extraNotifications ? sendNotifications(msg) : sendNotificationEvent(msg)
+                                (extraNotifications && msg) ? sendNotifications(msg) : sendNotificationEvent(msg)
                                 return // We are done here, exit out as we've scheduled the next update
                             } else {
                                 log.debug "$lock ${name ?: ""} user $user already deleted"
@@ -3410,13 +3460,14 @@ def codeCheck() {
                                         log.debug "$lock scheduled user $user $name is already active, not adding again"
                                     } else {
                                         if ((state.retryCodeCount[lock.id][user as String] = (state.retryCodeCount[lock.id][user as String] ?: 0) + 1) > (maxRetries + 1)) {
+                                            msg = "Retry programming exceeded, user $user ${name ?: ""} addition not confirmed by lock $lock"
+                                            log.warn msg
                                             if (state.retryCodeCount[lock.id][user as String] == (maxRetries + 2)) { // Only process it once until reset
                                                 extraNotifications = true // We need to inform the user
                                             } else {
                                                 state.retryCodeCount[lock.id][user as String] = (maxRetries + 3) // Fix it so when maxRetries changes, it'll pick it up
+                                                msg = "" // Don't message endlessly
                                             }
-                                            msg = "Retry programming exceeded, user $user ${name ?: ""} addition not confirmed by lock $lock"
-                                            log.warn msg
                                         } else {
                                             setCode(lock, user, code, name)
                                             msg = "Requesting $lock to add active scheduled user $user ${name ?: ""}, code: $code"
@@ -3428,7 +3479,7 @@ def codeCheck() {
                                         startTimer((sendDelay ?: defaultSendDelay), codeCheck) // schedule the next code update after a few seconds otherwise it overloads locks and doesn't work
 
                                         // Last thing to do since it could timeout
-                                        extraNotifications ? sendNotifications(msg) : sendNotificationEvent(msg)
+                                        (extraNotifications && msg) ? sendNotifications(msg) : sendNotificationEvent(msg)
                                         return // We are done here, exit out as we've scheduled the next update
                                     }
                                 } else { // Outside operating schedule
@@ -3436,13 +3487,14 @@ def codeCheck() {
                                         log.debug "$lock scheduled user $user $name is already inactive, not removing again"
                                     } else {
                                         if ((state.retryCodeCount[lock.id][user as String] = (state.retryCodeCount[lock.id][user as String] ?: 0) + 1) > (maxRetries + 1)) {
+                                            msg = "Retry programming exceeded, user $user ${name ?: ""} deletion not confirmed by lock $lock"
+                                            log.warn msg
                                             if (state.retryCodeCount[lock.id][user as String] == (maxRetries + 2)) { // Only process it once until reset
                                                 extraNotifications = true // We need to inform the user
                                             } else {
                                                 state.retryCodeCount[lock.id][user as String] = (maxRetries + 3) // Fix it so when maxRetries changes, it'll pick it up
+                                                msg = "" // Don't message endlessly
                                             }
-                                            msg = "Retry programming exceeded, user $user ${name ?: ""} deletion not confirmed by lock $lock"
-                                            log.warn msg
                                         } else {
                                             deleteCode(lock, user)
                                             msg = "Requesting $lock to delete inactive scheduled user $user ${name ?: ""}"
@@ -3454,19 +3506,20 @@ def codeCheck() {
                                         startTimer((sendDelay ?: defaultSendDelay), codeCheck) // schedule the next code update after a few seconds otherwise it overloads locks and doesn't work
 
                                         // Last thing to do since it could timeout
-                                        extraNotifications ? sendNotifications(msg) : sendNotificationEvent(msg)
+                                        (extraNotifications && msg) ? sendNotifications(msg) : sendNotificationEvent(msg)
                                         return // We are done here, exit out as we've scheduled the next update
                                     }
                                 }
                             } else if (state.lockCodes[lock.id].(user as String)) { // Code is null but the list shows programmed, i.e. we were asked to explicit send a delete command to the lock
                                 if ((state.retryCodeCount[lock.id][user as String] = (state.retryCodeCount[lock.id][user as String] ?: 0) + 1) > (maxRetries + 1)) {
+                                    msg = "Retry programming exceeded, user $user ${name ?: ""} deletion not confirmed by lock $lock"
+                                    log.warn msg
                                     if (state.retryCodeCount[lock.id][user as String] == (maxRetries + 2)) { // Only process it once until reset
                                         extraNotifications = true // We need to inform the user
                                     } else {
                                         state.retryCodeCount[lock.id][user as String] = (maxRetries + 3) // Fix it so when maxRetries changes, it'll pick it up
+                                        msg = "" // Don't message endlessly
                                     }
-                                    msg = "Retry programming exceeded, user $user ${name ?: ""} deletion not confirmed by lock $lock"
-                                    log.warn msg
                                 } else {
                                     deleteCode(lock, user)
                                     msg = "Requesting $lock to delete user $user ${name ?: ""}"
@@ -3478,7 +3531,7 @@ def codeCheck() {
                                 startTimer((sendDelay ?: defaultSendDelay), codeCheck) // schedule the next code update after a few seconds otherwise it overloads locks and doesn't work
 
                                 // Last thing to do since it could timeout
-                                extraNotifications ? sendNotifications(msg) : sendNotificationEvent(msg)
+                                (extraNotifications && msg) ? sendNotifications(msg) : sendNotificationEvent(msg)
                                 return // We are done here, exit out as we've scheduled the next update
                             } else {
                                 log.debug "$lock ${name ?: ""} user $user already deleted"
@@ -3489,13 +3542,14 @@ def codeCheck() {
                             if (code != null) {
                                 if (state.lockCodes[lock.id].(user as String) != code) { // Only if code has changed
                                     if ((state.retryCodeCount[lock.id][user as String] = (state.retryCodeCount[lock.id][user as String] ?: 0) + 1) > (maxRetries + 1)) {
+                                        msg = "Retry programming exceeded, user $user ${name ?: ""} addition not confirmed by lock $lock"
+                                        log.warn msg
                                         if (state.retryCodeCount[lock.id][user as String] == (maxRetries + 2)) { // Only process it once until reset
                                             extraNotifications = true // We need to inform the user
                                         } else {
                                             state.retryCodeCount[lock.id][user as String] = (maxRetries + 3) // Fix it so when maxRetries changes, it'll pick it up
+                                            msg = "" // Don't message endlessly
                                         }
-                                        msg = "Retry programming exceeded, user $user ${name ?: ""} addition not confirmed by lock $lock"
-                                        log.warn msg
                                     } else {
                                         setCode(lock, user, code, name)
                                         msg = "Requesting $lock to add permanent user $user ${name ?: ""}, code: $code"
@@ -3507,23 +3561,24 @@ def codeCheck() {
                                     startTimer((sendDelay ?: defaultSendDelay), codeCheck) // schedule the next code update after a few seconds otherwise it overloads locks and doesn't work
 
                                     // Last thing to do since it could timeout
-                                    extraNotifications ? sendNotifications(msg) : sendNotificationEvent(msg)
+                                    (extraNotifications && msg) ? sendNotifications(msg) : sendNotificationEvent(msg)
                                     return // We are done here, exit out as we've scheduled the next update
                                 } else {
                                     if (getCodeName(lock, user) && (getCodeName(lock, user) != name)) { // If the username has changed update it, if it's empty ignore it
-                                            updateCodeName(lock, user, name)
+                                        updateCodeName(lock, user, name)
                                     }
                                     log.debug "$lock User $user $name is a permanent code and is already active"
                                 }
                             } else if (state.lockCodes[lock.id].(user as String)) { // Code is null but the list shows programmed, i.e. we were asked to explicit send a delete command to the lock
                                 if ((state.retryCodeCount[lock.id][user as String] = (state.retryCodeCount[lock.id][user as String] ?: 0) + 1) > (maxRetries + 1)) {
+                                    msg = "Retry programming exceeded, user $user ${name ?: ""} deletion not confirmed by lock $lock"
+                                    log.warn msg
                                     if (state.retryCodeCount[lock.id][user as String] == (maxRetries + 2)) { // Only process it once until reset
                                         extraNotifications = true // We need to inform the user
                                     } else {
                                         state.retryCodeCount[lock.id][user as String] = (maxRetries + 3) // Fix it so when maxRetries changes, it'll pick it up
+                                        msg = "" // Don't message endlessly
                                     }
-                                    msg = "Retry programming exceeded, user $user ${name ?: ""} deletion not confirmed by lock $lock"
-                                    log.warn msg
                                 } else {
                                     deleteCode(lock, user)
                                     msg = "Requesting $lock to delete user $user ${name ?: ""}"
@@ -3535,7 +3590,7 @@ def codeCheck() {
                                 startTimer((sendDelay ?: defaultSendDelay), codeCheck) // schedule the next code update after a few seconds otherwise it overloads locks and doesn't work
 
                                 // Last thing to do since it could timeout
-                                extraNotifications ? sendNotifications(msg) : sendNotificationEvent(msg)
+                                (extraNotifications && msg) ? sendNotifications(msg) : sendNotificationEvent(msg)
                                 return // We are done here, exit out as we've scheduled the next update
                             } else {
                                 log.debug "$lock ${name ?: ""} user $user already deleted"
@@ -3567,13 +3622,14 @@ def codeCheck() {
                                         log.debug "$lock presence user $user $name is already active, not adding again"
                                     } else {
                                         if ((state.retryCodeCount[lock.id][user as String] = (state.retryCodeCount[lock.id][user as String] ?: 0) + 1) > (maxRetries + 1)) {
+                                            msg = "Retry programming exceeded, user $user ${name ?: ""} addition not confirmed by lock $lock"
+                                            log.warn msg
                                             if (state.retryCodeCount[lock.id][user as String] == (maxRetries + 2)) { // Only process it once until reset
                                                 extraNotifications = true // We need to inform the user
                                             } else {
                                                 state.retryCodeCount[lock.id][user as String] = (maxRetries + 3) // Fix it so when maxRetries changes, it'll pick it up
+                                                msg = "" // Don't message endlessly
                                             }
-                                            msg = "Retry programming exceeded, user $user ${name ?: ""} addition not confirmed by lock $lock"
-                                            log.warn msg
                                         } else {
                                             setCode(lock, user, code, name)
                                             msg = "Requesting $lock to add presence based user $user ${name ?: ""}, code: $code"
@@ -3585,7 +3641,7 @@ def codeCheck() {
                                         startTimer((sendDelay ?: defaultSendDelay), codeCheck) // schedule the next code update after a few seconds otherwise it overloads locks and doesn't work
 
                                         // Last thing to do since it could timeout
-                                        extraNotifications ? sendNotifications(msg) : sendNotificationEvent(msg)
+                                        (extraNotifications && msg) ? sendNotifications(msg) : sendNotificationEvent(msg)
                                         return // We are done here, exit out as we've scheduled the next update
                                     }
                                 } else { // Presence conditions not satisfied
@@ -3593,13 +3649,14 @@ def codeCheck() {
                                         log.debug "$lock presence user $user $name is already inactive, not removing again"
                                     } else {
                                         if ((state.retryCodeCount[lock.id][user as String] = (state.retryCodeCount[lock.id][user as String] ?: 0) + 1) > (maxRetries + 1)) {
+                                            msg = "Retry programming exceeded, user $user ${name ?: ""} deletion not confirmed by lock $lock"
+                                            log.warn msg
                                             if (state.retryCodeCount[lock.id][user as String] == (maxRetries + 2)) { // Only process it once until reset
                                                 extraNotifications = true // We need to inform the user
                                             } else {
                                                 state.retryCodeCount[lock.id][user as String] = (maxRetries + 3) // Fix it so when maxRetries changes, it'll pick it up
+                                                msg = "" // Don't message endlessly
                                             }
-                                            msg = "Retry programming exceeded, user $user ${name ?: ""} deletion not confirmed by lock $lock"
-                                            log.warn msg
                                         } else {
                                             deleteCode(lock, user)
                                             msg = "Requesting $lock to delete presence based user $user ${name ?: ""}"
@@ -3611,7 +3668,7 @@ def codeCheck() {
                                         startTimer((sendDelay ?: defaultSendDelay), codeCheck) // schedule the next code update after a few seconds otherwise it overloads locks and doesn't work
 
                                         // Last thing to do since it could timeout
-                                        extraNotifications ? sendNotifications(msg) : sendNotificationEvent(msg)
+                                        (extraNotifications && msg) ? sendNotifications(msg) : sendNotificationEvent(msg)
                                         return // We are done here, exit out as we've scheduled the next update
                                     }
                                 }
@@ -3640,13 +3697,14 @@ def codeCheck() {
                                         log.debug "$lock mode user $user $name is already active, not adding again"
                                     } else {
                                         if ((state.retryCodeCount[lock.id][user as String] = (state.retryCodeCount[lock.id][user as String] ?: 0) + 1) > (maxRetries + 1)) {
+                                            msg = "Retry programming exceeded, user $user ${name ?: ""} addition not confirmed by lock $lock"
+                                            log.warn msg
                                             if (state.retryCodeCount[lock.id][user as String] == (maxRetries + 2)) { // Only process it once until reset
                                                 extraNotifications = true // We need to inform the user
                                             } else {
                                                 state.retryCodeCount[lock.id][user as String] = (maxRetries + 3) // Fix it so when maxRetries changes, it'll pick it up
+                                                msg = "" // Don't message endlessly
                                             }
-                                            msg = "Retry programming exceeded, user $user ${name ?: ""} addition not confirmed by lock $lock"
-                                            log.warn msg
                                         } else {
                                             setCode(lock, user, code, name)
                                             msg = "Requesting $lock to add mode based user $user ${name ?: ""}, code: $code"
@@ -3658,7 +3716,7 @@ def codeCheck() {
                                         startTimer((sendDelay ?: defaultSendDelay), codeCheck) // schedule the next code update after a few seconds otherwise it overloads locks and doesn't work
 
                                         // Last thing to do since it could timeout
-                                        extraNotifications ? sendNotifications(msg) : sendNotificationEvent(msg)
+                                        (extraNotifications && msg) ? sendNotifications(msg) : sendNotificationEvent(msg)
                                         return // We are done here, exit out as we've scheduled the next update
                                     }
                                 } else { // Mode conditions not satisfied
@@ -3666,13 +3724,14 @@ def codeCheck() {
                                         log.debug "$lock mode user $user $name is already inactive, not removing again"
                                     } else {
                                         if ((state.retryCodeCount[lock.id][user as String] = (state.retryCodeCount[lock.id][user as String] ?: 0) + 1) > (maxRetries + 1)) {
+                                            msg = "Retry programming exceeded, user $user ${name ?: ""} deletion not confirmed by lock $lock"
+                                            log.warn msg
                                             if (state.retryCodeCount[lock.id][user as String] == (maxRetries + 2)) { // Only process it once until reset
                                                 extraNotifications = true // We need to inform the user
                                             } else {
                                                 state.retryCodeCount[lock.id][user as String] = (maxRetries + 3) // Fix it so when maxRetries changes, it'll pick it up
+                                                msg = "" // Don't message endlessly
                                             }
-                                            msg = "Retry programming exceeded, user $user ${name ?: ""} deletion not confirmed by lock $lock"
-                                            log.warn msg
                                         } else {
                                             deleteCode(lock, user)
                                             msg = "Requesting $lock to delete mode based user $user ${name ?: ""}"
@@ -3684,7 +3743,7 @@ def codeCheck() {
                                         startTimer((sendDelay ?: defaultSendDelay), codeCheck) // schedule the next code update after a few seconds otherwise it overloads locks and doesn't work
 
                                         // Last thing to do since it could timeout
-                                        extraNotifications ? sendNotifications(msg) : sendNotificationEvent(msg)
+                                        (extraNotifications && msg) ? sendNotifications(msg) : sendNotificationEvent(msg)
                                         return // We are done here, exit out as we've scheduled the next update
                                     }
                                 }
@@ -3694,13 +3753,14 @@ def codeCheck() {
                         case 'Inactive':
                             if (state.lockCodes[lock.id].(user as String)) { // Delete the code is hasn't been deleted
                                 if ((state.retryCodeCount[lock.id][user as String] = (state.retryCodeCount[lock.id][user as String] ?: 0) + 1) > (maxRetries + 1)) {
+                                    msg = "Retry programming exceeded, user $user ${name ?: ""} deletion not confirmed by lock $lock"
+                                    log.warn msg
                                     if (state.retryCodeCount[lock.id][user as String] == (maxRetries + 2)) { // Only process it once until reset
                                         extraNotifications = true // We need to inform the user
                                     } else {
                                         state.retryCodeCount[lock.id][user as String] = (maxRetries + 3) // Fix it so when maxRetries changes, it'll pick it up
+                                        msg = "" // Don't message endlessly
                                     }
-                                    msg = "Retry programming exceeded, user $user ${name ?: ""} deletion not confirmed by lock $lock"
-                                    log.warn msg
                                 } else {
                                     deleteCode(lock, user)
                                     msg = "Requesting $lock to delete inactive user $user ${name ?: ""}"
@@ -3712,7 +3772,7 @@ def codeCheck() {
                                 startTimer((sendDelay ?: defaultSendDelay), codeCheck) // schedule the next code update after a few seconds otherwise it overloads locks and doesn't work
 
                                 // Last thing to do since it could timeout
-                                extraNotifications ? sendNotifications(msg) : sendNotificationEvent(msg)
+                                (extraNotifications && msg) ? sendNotifications(msg) : sendNotificationEvent(msg)
                                 return // We are done here, exit out as we've scheduled the next update
                             } else {
                                 log.debug "$lock ${name ?: ""} user $user already inactive"
@@ -3722,13 +3782,14 @@ def codeCheck() {
                         default: // No user type selected, it's empty delete code
                             if (state.lockCodes[lock.id].(user as String)) { // Delete the code is hasn't been deleted
                                 if ((state.retryCodeCount[lock.id][user as String] = (state.retryCodeCount[lock.id][user as String] ?: 0) + 1) > (maxRetries + 1)) {
+                                    msg = "Retry programming exceeded, user $user ${name ?: ""} deletion not confirmed by lock $lock"
+                                    log.warn msg
                                     if (state.retryCodeCount[lock.id][user as String] == (maxRetries + 2)) { // Only process it once until reset
                                         extraNotifications = true // We need to inform the user
                                     } else {
                                         state.retryCodeCount[lock.id][user as String] = (maxRetries + 3) // Fix it so when maxRetries changes, it'll pick it up
+                                        msg = "" // Don't message endlessly
                                     }
-                                    msg = "Retry programming exceeded, user $user ${name ?: ""} deletion not confirmed by lock $lock"
-                                    log.warn msg
                                 } else {
                                     deleteCode(lock, user)
                                     msg = "Requesting $lock to delete empty user $user ${name ?: ""}"
@@ -3740,7 +3801,7 @@ def codeCheck() {
                                 startTimer((sendDelay ?: defaultSendDelay), codeCheck) // schedule the next code update after a few seconds otherwise it overloads locks and doesn't work
 
                                 // Last thing to do since it could timeout
-                                extraNotifications ? sendNotifications(msg) : sendNotificationEvent(msg)
+                                (extraNotifications && msg) ? sendNotifications(msg) : sendNotificationEvent(msg)
                                 return // We are done here, exit out as we've scheduled the next update
                             } else {
                                 log.debug "$lock ${name ?: ""} user $user is empty, code already deleted"
@@ -3759,13 +3820,14 @@ def codeCheck() {
                 def user = i as Integer
                 if (user > maxUserNames) { // This is an excess code, clean it up
                     if ((state.retryCodeCount[lock.id][user as String] = (state.retryCodeCount[lock.id][user as String] ?: 0) + 1) > (maxRetries + 1)) {
+                        msg = "Retry programming exceeded, user $user ${name ?: ""} deletion not confirmed by lock $lock"
+                        log.warn msg
                         if (state.retryCodeCount[lock.id][user as String] == (maxRetries + 2)) { // Only process it once until reset
                             extraNotifications = true // We need to inform the user
                         } else {
                             state.retryCodeCount[lock.id][user as String] = (maxRetries + 3) // Fix it so when maxRetries changes, it'll pick it up
+                            msg = "" // Don't message endlessly
                         }
-                        msg = "Retry programming exceeded, user $user ${name ?: ""} deletion not confirmed by lock $lock"
-                        log.warn msg
                     } else {
                         deleteCode(lock, user)
                         msg = "Requesting $lock to delete excess user $user ${name ?: ""}"
@@ -3776,7 +3838,7 @@ def codeCheck() {
                     startTimer((sendDelay ?: defaultSendDelay), codeCheck) // schedule the next code update after a few seconds otherwise it overloads locks and doesn't work
 
                     // Last thing to do since it could timeout
-                    extraNotifications ? sendNotifications(msg) : sendNotificationEvent(msg)
+                    (extraNotifications && msg) ? sendNotifications(msg) : sendNotificationEvent(msg)
                     return true// We are done here, exit out as we've scheduled the next update
                 }
             }) { // If had a match then exit as we've scheduled the next iteration
@@ -4082,6 +4144,82 @@ private deleteSettings(map) {
     }
 }
 
+private loginCheck() {
+    log.trace "Login check"
+	
+    authUpdate("check") { resp ->
+        if (resp?.status == 401) { // Invalid username
+            state.loginError = "Invalid username" // No response from website - we should not be here
+            state.loginSuccess = false
+        } else if ((resp?.status == 200) && resp?.data) {
+            def ret = resp.data
+            if (ret?.Authenticated) {
+                state.loginError = ""
+                state.loginSuccess = true
+            } else {
+                state.loginError = ret?.Error
+                state.loginSuccess = false
+            }
+        } else {
+            state.loginError = "Unable to authenticate license, please try again later" // No response from website - we should not be here
+            state.loginSuccess = false
+        }
+    }
+}
+
+private authUpdate(String action, Closure closure = null) {
+    if (!username) {
+    	return
+    }
+    
+    def params = [
+        uri: "https://auth.rboyapps.com/v1/license",
+        headers: [
+            Authorization: "Basic ${"${username?.trim()?.toLowerCase()}:${username?.trim()?.toLowerCase()}".getBytes().encodeBase64()}",
+        ],
+        body: [
+            AppId: app.id,
+            Timestamp: new Date(now()).format("yyyy-MM-dd'T'HH:mm:ssXXX", location.timeZone ?: TimeZone.getDefault()), // ISO_8601
+            State: action,
+            Username: username?.trim()?.toLowerCase(),
+            LocationId: location.id,
+            LocationName: location.name,
+            AccountId: app.accountId,
+            AppName: "Lock User Management",
+            AppInstallName: app.label,
+            AppVersion: clientVersion(),
+        ]
+    ]
+    
+    log.trace "Calling AuthUpdate\n${params}"
+
+    try {
+        httpPostJson(params) { resp ->
+            /*resp?.headers.each {
+                log.trace "${it.name} : ${it.value}"
+            }
+            log.trace "response contentType: ${resp?.contentType}"*/
+            log.debug "response data: ${resp?.data}"
+            if (closure) {
+                closure(resp)
+            }
+        }
+    } catch (e) {
+        //log.error "Auth response:\n${e.response?.data}\n\n${e.response?.allHeaders}\n\n${e.response?.status}\n\n${e.response?.statusLine}\n\n$e"
+        if ("${e}"?.contains("HttpResponseException")) { // If it's a HTTP error with non 200 status
+            log.warn "Auth status: ${e?.response?.status}, response: ${e?.response?.statusLine}"
+            if (closure) {
+                closure(e?.response)
+            }
+        } else { // Some other error
+            log.error "Auth error: $e"
+            if (closure) {
+                closure(null)
+            }
+        }
+    }
+}
+
 def checkForCodeUpdate(evt = null) {
     log.trace "Getting latest version data from the RBoy Apps server"
     
@@ -4141,5 +4279,3 @@ def checkForCodeUpdate(evt = null) {
 }
 
 // THIS IS THE END OF THE FILE
-
-

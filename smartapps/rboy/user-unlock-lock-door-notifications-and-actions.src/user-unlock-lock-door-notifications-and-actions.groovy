@@ -20,9 +20,7 @@
 * The user assumes all responsibility for selecting the software and for the results obtained from the use of the software. The user shall bear the entire risk as to the quality and the performance of the software.
 */ 
 
-def clientVersion() {
-    return "04.08.02"
-}
+def clientVersion() { return "04.09.03" }
 
 /**
 * User Door Unlock/Lock Notifications and Actions. Mirror of Multi User Lock Code Mgmt without the code programming, reuse existing lock programming
@@ -30,6 +28,9 @@ def clientVersion() {
 * Copyright RBoy Apps, redistribution or reuse of code is not allowed without permission
 *
 * Change Log:
+* 2020-08-11 - (v04.09.03) Detect deleted routines after a migration
+* 2020-08-05 - (v04.09.02) Dont' send code upgrade notifications
+* 2020-07-29 - (v04.09.01) New app/platform improvements and fix for Door open/close actions when using multiple doors on Android Classic app
 * 2020-06-22 - (v04.08.02) Optimized page layout for door open/close actions when multiple locks are selected
 * 2020-05-22 - (v04.08.01) Disabled auto unlock for open doors (security)
 * 2020-05-01 - (v04.08.00) Added option to toggle switches on keypad lock/unlock/arm modes
@@ -117,6 +118,8 @@ definition(
 )
 
 preferences {
+    page(name: "loginPage")
+    page(name: "loginPage2")
     page(name: "setupApp")
     page(name: "usersPage")
     page(name: "notificationsPage")
@@ -129,6 +132,48 @@ preferences {
     page(name: "openCloseDoorPage")
     page(name: "openCloseDoorPageSummary")
     page(name: "userConfigPage")
+}
+
+def loginPage() {
+    log.trace "Login page"
+    if (!state.loginSuccess && username) {
+        loginCheck()
+    }
+    if (state.loginSuccess) {
+        setupApp()
+    } else {
+        state.sendUpdate = true
+        loginSection("loginPage", "loginPage2")
+    }
+}
+
+def loginPage2() {
+    log.trace "Login page2"
+    if (!state.loginSuccess && username) {
+        loginCheck()
+    }
+    if (state.loginSuccess) {
+        setupApp()
+    } else {
+        state.sendUpdate = true
+        loginSection("loginPage2", "loginPage")
+    }
+}
+
+private loginSection(name, nextPage) {
+    dynamicPage(name: name, title: "User Door Unlock/Lock Notifications and Actions v${clientVersion()}", install: state.loginSuccess, uninstall: true, nextPage: state.loginSuccess ? "" : nextPage) {
+        section() {
+            if (state.loginError) {
+                log.warn "Authenticating failed: ${state.loginError}"
+                paragraph title: "Login failed", image: "https://www.rboyapps.com/images/RBoyApps.png", required: true, "${state.loginError}"
+            } else {
+                log.debug "Check authentication credentials, Login: $username"
+                paragraph title: "Login", image: "https://www.rboyapps.com/images/RBoyApps.png", required: false, "Enter your RBoy Apps username\nYou can retrieve your username from www.rboyapps.com lost password page"
+            }
+
+            input name: "username", type: "text", title: "Username", capitalization: "none", submitOnChange: false, required: false
+        }
+    }
 }
 
 def setupApp() {
@@ -177,7 +222,11 @@ def setupApp() {
                 label title: "Assign a name for this SmartApp (optional)", required: false
             }
         }
-        
+
+        section("Confidential", hideable: true, hidden: true) {
+            paragraph("RBoy Apps Username: " + (username?.toLowerCase() ?: "Unlicensed") + (state.loginSuccess ? "" : ", contact suppport"))
+        }
+
         remove("Uninstall")
     }
 }
@@ -228,7 +277,7 @@ def openCloseDoorPageSummary() {
                         lockId: lock.id, 
                         passed: true 
                     ]
-                    href(name: "openCloseDoor", params: hrefParams, title: "${lock}", page: "openCloseDoorPage", description: doorOpenCloseStatus(lock), required: false, image: "https://www.rboyapps.com/images/DoorOpenClose.png")
+                    href(name: "openCloseDoor${lock}", params: hrefParams, title: "${lock}", page: "openCloseDoorPage", description: doorOpenCloseStatus(lock), required: false, image: "https://www.rboyapps.com/images/DoorOpenClose.png")
                 }
             }
         }
@@ -348,9 +397,6 @@ def unlockLockActionsPage(params) {
         def phrases = location.helloHome?.getPhrases()
         phrases = phrases ? phrases*.label?.sort() - null : [] // Check for null ghost routines
         def showActions = true
-        if (!phrases) {
-            log.warn "No Routines found!!!"
-        }
         section {
             if (user) { // User specific override options
                 paragraph "Enabling custom user actions and notifications will override over the general actions defined on the first page"
@@ -443,9 +489,6 @@ def unlockKeypadActionsPage(params) {
     dynamicPage(name:"unlockKeypadActionsPage", title: "Setup keypad unlock actions for doors" + (user ? " for user $name." : ""), uninstall: false, install: false) {
         def phrases = location.helloHome?.getPhrases()
         phrases = phrases ? phrases*.label?.sort() - null : [] // Check for null ghost routines
-        if (!phrases) { // This should not happen, it should be taken care of in parent page
-            log.warn "No Routines found!!!"
-        }
 
         section ("Door Keypad Unlock Actions${lock ? " for $lock" : ""}") {
             def priorHomePhrase = settings."homePhrase${lock}${user}"
@@ -505,9 +548,6 @@ def unlockManualActionsPage(params) {
     dynamicPage(name:"unlockManualActionsPage", title: "Setup manual unlock actions for doors", uninstall: false, install: false) {
         def phrases = location.helloHome?.getPhrases()
         phrases = phrases ? phrases*.label?.sort() - null : [] // Check for null ghost routines
-        if (!phrases) { // This should not happen, it should be taken care of in parent page
-            log.warn "No Routines found!!!"
-        }
 
         section ("Door Manual Unlock Actions${lock ? " for $lock" : ""}") {
             def priorHomePhrase = settings."homePhraseManual${lock}"
@@ -565,9 +605,6 @@ def armKeypadActionsPage(params) {
     dynamicPage(name:"armKeypadActionsPage", title: "Setup Arm ${arm?.capitalize()} button actions for ${lock ?: "keypad"}" + (user ? " for user $name." : ""), uninstall: false, install: false) {
         def phrases = location.helloHome?.getPhrases()
         phrases = phrases ? phrases*.label?.sort() - null : [] // Check for null ghost routines
-        if (!phrases) { // This should not happen, it should be taken care of in parent page
-            log.warn "No Routines found!!!"
-        }
 
         section {
             input "keypadArmActions${lock}${user}${arm}", "bool", title: "Enable custom actions", required: false, submitOnChange: true
@@ -615,9 +652,6 @@ def lockKeypadActionsPage(params) {
     dynamicPage(name:"lockKeypadActionsPage", title: "Setup keypad lock actions for doors" + (user ? " for user $name." : ""), uninstall: false, install: false) {
         def phrases = location.helloHome?.getPhrases()
         phrases = phrases ? phrases*.label?.sort() - null : [] // Check for null ghost routines
-        if (!phrases) { // This should not happen, it should be taken care of in parent page
-            log.warn "No Routines found!!!"
-        }
 
         section ("Door Keypad Lock Actions${lock ? " for $lock" : ""}") {
             def priorLockPhrase = settings."externalLockPhrase${lock}${user}"
@@ -700,9 +734,6 @@ def lockManualActionsPage(params) {
     dynamicPage(name:"lockManualActionsPage", title: "Setup manual lock actions for doors", uninstall: false, install: false) {
         def phrases = location.helloHome?.getPhrases()
         phrases = phrases ? phrases*.label?.sort() - null : [] // Check for null ghost routines
-        if (!phrases) { // This should not happen, it should be taken care of in parent page
-            log.warn "No Routines found!!!"
-        }
 
         section ("Door Manual Lock Actions${lock ? " for $lock" : ""}") {
             def priorLockPhrase = settings."externalLockPhraseManual${lock}"
@@ -873,7 +904,7 @@ def changeHandler(evt) {
         def msg = "NOTE: ${app.label} detected a code upgrade. Updating configuration, please open the app and re-validate your settings"
         log.warn msg
         startTimer(1, appTouch) // Reinitialize the app offline to avoid a loop as appTouch calls codeCheck
-        sendNotifications(msg) // Do this in the end as it may timeout
+        //sendPush msg // Do this in the end as it may timeout
         return
     }
 
@@ -1324,7 +1355,7 @@ def processUnlockEvent(evt) {
                 msg += detailedNotifications ? ", changing mode to ${settings."homeModeManual${lockStr}"}" : ""
             }
 
-            if (settings."homePhraseManual${lockStr}") {
+            if (settings."homePhraseManual${lockStr}" && location.helloHome?.getPhrases()) {
                 log.info "$evt.displayName was unlocked successfully, running routine ${settings."homePhraseManual${lockStr}"}"
                 location.helloHome.execute(settings."homePhraseManual${lockStr}") // First do this to avoid false alerts from a slow platform
                 msg += detailedNotifications ? ", running routine ${settings."homePhraseManual${lockStr}"}" : ""
@@ -1469,7 +1500,7 @@ def processUnlockEvent(evt) {
                 msg += detailedNotifications ? ", changing mode to ${settings."homeMode${lockStr}${user}"}" : ""
             }
 
-            if (settings."homePhrase${lockStr}${user}") {
+            if (settings."homePhrase${lockStr}${user}" && location.helloHome?.getPhrases()) {
                 log.info "$evt.displayName was unlocked successfully, running routine ${settings."homePhrase${lockStr}${user}"}"
                 location.helloHome.execute(settings."homePhrase${lockStr}${user}") // First do this to avoid false alerts from a slow platform
                 msg += detailedNotifications ? ", running routine ${settings."homePhrase${lockStr}${user}"}" : ""
@@ -1863,7 +1894,7 @@ def processLockActions(evt) {
                 msg += detailedNotifications ? ", changing mode to ${settings."externalLockMode${lockStr}${user}${arm}"}" : ""
             }
 
-            if (settings."externalLockPhrase${lockStr}${user}${arm}") {
+            if (settings."externalLockPhrase${lockStr}${user}${arm}" && location.helloHome?.getPhrases()) {
                 log.info "$evt.displayName was locked successfully, running routine ${settings."externalLockPhrase${lockStr}${user}${arm}"}"
                 location.helloHome.execute(settings."externalLockPhrase${lockStr}${user}${arm}")
                 msg += detailedNotifications ? ", running ${settings."externalLockPhrase${lockStr}${user}${arm}"}" : ""
@@ -1960,7 +1991,7 @@ def processLockActions(evt) {
                 msg += detailedNotifications ? ", changing mode to ${settings."externalLockModeManual${lockStr}"}" : ""
             }
 
-            if (settings."externalLockPhraseManual${lockStr}") {
+            if (settings."externalLockPhraseManual${lockStr}" && location.helloHome?.getPhrases()) {
                 log.info "$evt.displayName was locked successfully, running routine ${settings."externalLockPhraseManual${lockStr}"}"
                 location.helloHome.execute(settings."externalLockPhraseManual${lockStr}")
                 msg += detailedNotifications ? ", running ${settings."externalLockPhraseManual${lockStr}"}" : ""
@@ -2019,7 +2050,7 @@ def heartBeatMonitor() {
         def msg = "NOTE: ${app.label} detected a code upgrade. Updating configuration, please open the app and re-validate your settings"
         log.warn msg
         startTimer(1, appTouch) // Reinitialize the app offline to avoid a loop as appTouch calls codeCheck
-        sendNotifications(msg) // Do this in the end as it may timeout
+        //sendPush msg // Do this in the end as it may timeout
         return
     }
 }
@@ -2079,6 +2110,82 @@ private void sendNotifications(message, user = "") {
                 audioDevice.playTrackAndResume(textToSpeech(message)?.uri, audioVolume) // No translations at this time
             } else {
                 audioDevice.playTrack(textToSpeech(message)?.uri) // No translations at this time
+            }
+        }
+    }
+}
+
+private loginCheck() {
+    log.trace "Login check"
+	
+    authUpdate("check") { resp ->
+        if (resp?.status == 401) { // Invalid username
+            state.loginError = "Invalid username" // No response from website - we should not be here
+            state.loginSuccess = false
+        } else if ((resp?.status == 200) && resp?.data) {
+            def ret = resp.data
+            if (ret?.Authenticated) {
+                state.loginError = ""
+                state.loginSuccess = true
+            } else {
+                state.loginError = ret?.Error
+                state.loginSuccess = false
+            }
+        } else {
+            state.loginError = "Unable to authenticate license, please try again later" // No response from website - we should not be here
+            state.loginSuccess = false
+        }
+    }
+}
+
+private authUpdate(String action, Closure closure = null) {
+    if (!username) {
+    	return
+    }
+    
+    def params = [
+        uri: "https://auth.rboyapps.com/v1/license",
+        headers: [
+            Authorization: "Basic ${"${username?.trim()?.toLowerCase()}:${username?.trim()?.toLowerCase()}".getBytes().encodeBase64()}",
+        ],
+        body: [
+            AppId: app.id,
+            Timestamp: new Date(now()).format("yyyy-MM-dd'T'HH:mm:ssXXX", location.timeZone ?: TimeZone.getDefault()), // ISO_8601
+            State: action,
+            Username: username?.trim()?.toLowerCase(),
+            LocationId: location.id,
+            LocationName: location.name,
+            AccountId: app.accountId,
+            AppName: "User Unlock Lock Door Notifications and Actions",
+            AppInstallName: app.label,
+            AppVersion: clientVersion(),
+        ]
+    ]
+    
+    log.trace "Calling AuthUpdate\n${params}"
+
+    try {
+        httpPostJson(params) { resp ->
+            /*resp?.headers.each {
+                log.trace "${it.name} : ${it.value}"
+            }
+            log.trace "response contentType: ${resp?.contentType}"*/
+            log.debug "response data: ${resp?.data}"
+            if (closure) {
+                closure(resp)
+            }
+        }
+    } catch (e) {
+        //log.error "Auth response:\n${e.response?.data}\n\n${e.response?.allHeaders}\n\n${e.response?.status}\n\n${e.response?.statusLine}\n\n$e"
+        if ("${e}"?.contains("HttpResponseException")) { // If it's a HTTP error with non 200 status
+            log.warn "Auth status: ${e?.response?.status}, response: ${e?.response?.statusLine}"
+            if (closure) {
+                closure(e?.response)
+            }
+        } else { // Some other error
+            log.error "Auth error: $e"
+            if (closure) {
+                closure(null)
             }
         }
     }

@@ -20,14 +20,13 @@
 * The user assumes all responsibility for selecting the software and for the results obtained from the use of the software. The user shall bear the entire risk as to the quality and the performance of the software.
 */ 
 
-def clientVersion() {
-    return "01.05.02"
-}
+def clientVersion() { return "01.06.01" }
 
 /**
  *  Low Battery Monitor and Notification
  *
  * Copyright RBoy Apps, redistribution of any changes or code is not allowed without permission
+ * 2020-07-29 - (v01.06.01) New app/platform improvements
  * 2020-05-04 - (v01.05.02) Try to detect platform outage and prevent code upgrade spam notifications
  * 2020-01-20 - (v01.05.01) Update icons for broken ST Android app 2.18
  * 2019-10-16 - (v01.05.00) Added support for day of week selection, improved settings update reliability/performance
@@ -52,7 +51,9 @@ definition(
 )
 
 preferences {
-    page(name: "setupAppPage")
+    page(name: "loginPage")
+    page(name: "loginPage2")
+    page(name: "setupApp")
     page(name: "newMonitorRulePage")
 }
 
@@ -71,10 +72,52 @@ private getSchedulingOptions() {
     ]
 }
 
-def setupAppPage() {
+def loginPage() {
+    log.trace "Login page"
+    if (!state.loginSuccess && username) {
+        loginCheck()
+    }
+    if (state.loginSuccess) {
+        setupApp()
+    } else {
+        state.sendUpdate = true
+        loginSection("loginPage", "loginPage2")
+    }
+}
+
+def loginPage2() {
+    log.trace "Login page2"
+    if (!state.loginSuccess && username) {
+        loginCheck()
+    }
+    if (state.loginSuccess) {
+        setupApp()
+    } else {
+        state.sendUpdate = true
+        loginSection("loginPage2", "loginPage")
+    }
+}
+
+private loginSection(name, nextPage) {
+    dynamicPage(name: name, title: "Low Battery Monitor and Notification v${clientVersion()}", install: state.loginSuccess, uninstall: true, nextPage: state.loginSuccess ? "" : nextPage) {
+        section() {
+            if (state.loginError) {
+                log.warn "Authenticating failed: ${state.loginError}"
+                paragraph title: "Login failed", image: "https://www.rboyapps.com/images/RBoyApps.png", required: true, "${state.loginError}"
+            } else {
+                log.debug "Check authentication credentials, Login: $username"
+                paragraph title: "Login", image: "https://www.rboyapps.com/images/RBoyApps.png", required: false, "Enter your RBoy Apps username\nYou can retrieve your username from www.rboyapps.com lost password page"
+            }
+
+            input name: "username", type: "text", title: "Username", capitalization: "none", submitOnChange: false, required: false
+        }
+    }
+}
+
+def setupApp() {
     log.trace "Settings $settings\nDOW Options: ${schedulingOptions.inspect()}"
 
-    dynamicPage(name: "setupAppPage", title: "Low Battery Monitor and Notification v${clientVersion()}", install: true, uninstall: true) {    
+    dynamicPage(name: "setupApp", title: "Low Battery Monitor and Notification v${clientVersion()}", install: true, uninstall: true) {    
         if (!atomicState.rules) {
             log.info "Initializing rules"
             atomicState.rules = []
@@ -142,6 +185,10 @@ def setupAppPage() {
         section() {
             label title: "Assign a name for this SmartApp (optional)", required: false
             input name: "updateNotifications", title: "Check for new versions of the app", type: "bool", defaultValue: true, required: false
+        }
+
+        section("Confidential", hideable: true, hidden: true) {
+            paragraph("RBoy Apps Username: " + (username?.toLowerCase() ?: "Unlicensed") + (state.loginSuccess ? "" : ", contact suppport"))
         }
     }
 }
@@ -437,6 +484,82 @@ private deleteSettings(map) {
     app.updateSettings(mapValues)
     map.each { name -> // Force the DB to reload new values
         settings[name] = '' 
+    }
+}
+
+private loginCheck() {
+    log.trace "Login check"
+	
+    authUpdate("check") { resp ->
+        if (resp?.status == 401) { // Invalid username
+            state.loginError = "Invalid username" // No response from website - we should not be here
+            state.loginSuccess = false
+        } else if ((resp?.status == 200) && resp?.data) {
+            def ret = resp.data
+            if (ret?.Authenticated) {
+                state.loginError = ""
+                state.loginSuccess = true
+            } else {
+                state.loginError = ret?.Error
+                state.loginSuccess = false
+            }
+        } else {
+            state.loginError = "Unable to authenticate license, please try again later" // No response from website - we should not be here
+            state.loginSuccess = false
+        }
+    }
+}
+
+private authUpdate(String action, Closure closure = null) {
+    if (!username) {
+    	return
+    }
+    
+    def params = [
+        uri: "https://auth.rboyapps.com/v1/license",
+        headers: [
+            Authorization: "Basic ${"${username?.trim()?.toLowerCase()}:${username?.trim()?.toLowerCase()}".getBytes().encodeBase64()}",
+        ],
+        body: [
+            AppId: app.id,
+            Timestamp: new Date(now()).format("yyyy-MM-dd'T'HH:mm:ssXXX", location.timeZone ?: TimeZone.getDefault()), // ISO_8601
+            State: action,
+            Username: username?.trim()?.toLowerCase(),
+            LocationId: location.id,
+            LocationName: location.name,
+            AccountId: app.accountId,
+            AppName: "Low Battery Monitor",
+            AppInstallName: app.label,
+            AppVersion: clientVersion(),
+        ]
+    ]
+    
+    log.trace "Calling AuthUpdate\n${params}"
+
+    try {
+        httpPostJson(params) { resp ->
+            /*resp?.headers.each {
+                log.trace "${it.name} : ${it.value}"
+            }
+            log.trace "response contentType: ${resp?.contentType}"*/
+            log.debug "response data: ${resp?.data}"
+            if (closure) {
+                closure(resp)
+            }
+        }
+    } catch (e) {
+        //log.error "Auth response:\n${e.response?.data}\n\n${e.response?.allHeaders}\n\n${e.response?.status}\n\n${e.response?.statusLine}\n\n$e"
+        if ("${e}"?.contains("HttpResponseException")) { // If it's a HTTP error with non 200 status
+            log.warn "Auth status: ${e?.response?.status}, response: ${e?.response?.statusLine}"
+            if (closure) {
+                closure(e?.response)
+            }
+        } else { // Some other error
+            log.error "Auth error: $e"
+            if (closure) {
+                closure(null)
+            }
+        }
     }
 }
 
